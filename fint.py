@@ -59,6 +59,24 @@ def create_indexes_and_distances(model_lon, model_lat, lons, lats, k=1, workers=
 
     return distances, inds
 
+def ind_for_depth(depth, depths_from_file):
+    """
+    Find the model depth index that is closest to the required depth
+    Parameters
+    ----------
+    depth : float
+        desired depth.
+    mesh : object
+        FESOM mesh object
+    Returns
+    dind : int
+        index that corresponds to the model depth level closest to `depth`.
+    -------
+    """
+    arr = [abs(abs(z) - abs(depth)) for z in depths_from_file]
+    v, i = min((v, i) for (i, v) in enumerate(arr))
+    dind = i
+    return dind
 
 def load_mesh(mesh_path):
     nodes = pd.read_csv(
@@ -82,8 +100,8 @@ def load_mesh(mesh_path):
 
     return x2, y2, elem
 
-def interpolate_kdtree2d(data_in, x2, y2, elem, lons, lats, radius_of_influence=100000):
-    distances, inds = create_indexes_and_distances(x2, y2, lons, lats, k=1, workers=4)
+def interpolate_kdtree2d(data_in, x2, y2, elem, lons, lats, distances, inds, radius_of_influence=100000):
+    
     interpolated = data_in[inds]
     interpolated[distances >= radius_of_influence] = np.nan
     interpolated[interpolated == 0] = np.nan
@@ -91,7 +109,29 @@ def interpolate_kdtree2d(data_in, x2, y2, elem, lons, lats, radius_of_influence=
     
     return interpolated
 
-    
+def parse_depths(depths, depths_from_file):
+    if len(depths.split(",")) > 1:
+        depths = list(map(int, depths.split(",")))
+    elif int(depths) == -1:
+        depths = [-1]
+    else:
+        depths = [int(depths)]
+    # print(depths)
+
+    if depths[0] == -1:
+        dinds = range(depths_from_file.shape[0])
+        realdepths = depths_from_file
+
+    else:
+        dinds = []
+        realdepths = []
+        for depth in depths:
+            ddepth = ind_for_depth(depth, depths_from_file)
+            dinds.append(ddepth)
+            realdepths.append(depths_from_file[ddepth])
+    # print(dinds)
+    # print(realdepths)
+    return dinds, realdepths
 
 
 def fint():
@@ -100,12 +140,37 @@ def fint():
     )
     parser.add_argument("meshpath", help="Path to the mesh folder")
     parser.add_argument("data", help="Path to the data file")
+    parser.add_argument(
+        "--depths",
+        "-d",
+        default="0",
+        type=str,
+        help="Depths in meters. \
+            Closest values from model levels will be taken.\
+            Several options available: number - e.g. '100',\
+                                       coma separated list - e.g. '0,10,100,200',\
+                                       -1 - all levels will be selected.",
+    )
+
+    
 
     args = parser.parse_args()
     data = xr.open_dataset(args.data)
+
     variable_name = list(data.data_vars)[0]
     dim_names = list(data.coords)
-    depth_coord = dim_names[0]
+        
+    if ("nz1" in data.dims) or ("nz" in data.dims):
+        depth_coord = dim_names[0]
+        depths_from_file = data[depth_coord].values
+        # print(data)
+        dinds, realdepths = parse_depths(args.depths, depths_from_file)
+        # print(dinds)
+    else:
+        dinds = [0]
+        realdepths = [0]
+
+
 
     x2, y2, elem = load_mesh(args.meshpath)
 
@@ -117,35 +182,27 @@ def fint():
     y = np.linspace(bottom,top,100)
     lon, lat = np.meshgrid(x,y)
 
-    distances, inds = create_indexes_and_distances(x2, y2, lon, lat, k=1, workers=4)
-    
-    interpolated2d = []
-
-    
     depth_limit_up = 0
     depth_limit_down = 2
     time_start = 0
-    time_end = 2
-
-    interpolated3d = np.zeros((time_end-time_start, depth_limit_down-depth_limit_up, len(x), len(y)))
+    time_end = 5
+    distances, inds = create_indexes_and_distances(x2, y2, lon, lat, k=1, workers=4)
+    interpolated3d = np.zeros((time_end-time_start, len(realdepths), len(x), len(y)))
     for ttime in range(time_end-time_start):
-        for depth in range(depth_limit_up, depth_limit_down):
+        for i, (dind, realdepth) in enumerate(zip(dinds, realdepths)):
             print(ttime)
-            data_in = data.temp[ttime, depth, :].values
-            interpolated = interpolate_kdtree2d(data_in, x2, y2, elem, lon, lat, radius_of_influence=100000)
-            interpolated3d[ttime, depth, :, :] = interpolated
+            data_in = data[variable_name][ttime, dind, :].values
+            interpolated = interpolate_kdtree2d(data_in, x2, y2, elem, lon, lat, distances, inds, radius_of_influence=100000)
+            interpolated3d[ttime, i, :, :] = interpolated
 
     out1 = xr.Dataset({variable_name:(['time', 'depth', 'lat', 'lon'], interpolated3d)},
                      coords={'time':np.atleast_1d(data.time[time_start:time_end].data),
-                    'depth':data[depth_coord][depth_limit_up:depth_limit_down].data,
+                    'depth':realdepths,
                   'lon':(['lon'], x),
                   'lat':(['lat'], y )
                  })
-                 
-    out1.to_netcdf(args.data.replace(".nc", "_interpolated.nc"))
-    # data_in = data.temp[0,0,:].values
 
-    # interpolated = interpolate_kdtree2d(data_in, x2, y2, elem, lon, lat, radius_of_influence=100000)
+    out1.to_netcdf(args.data.replace(".nc", "_interpolated.nc"))
 
     print(out1)
 
