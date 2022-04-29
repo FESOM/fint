@@ -87,6 +87,7 @@ def interpolate_kdtree2d(data_in, x2, y2, elem, lons, lats, radius_of_influence=
     interpolated = data_in[inds]
     interpolated[distances >= radius_of_influence] = np.nan
     interpolated[interpolated == 0] = np.nan
+    interpolated.shape = lons.shape
     
     return interpolated
 
@@ -102,8 +103,9 @@ def fint():
 
     args = parser.parse_args()
     data = xr.open_dataset(args.data)
-
-
+    variable_name = list(data.data_vars)[0]
+    dim_names = list(data.coords)
+    depth_coord = dim_names[0]
 
     x2, y2, elem = load_mesh(args.meshpath)
 
@@ -116,14 +118,41 @@ def fint():
     lon, lat = np.meshgrid(x,y)
 
     distances, inds = create_indexes_and_distances(x2, y2, lon, lat, k=1, workers=4)
-    data_in = data.temp[0,0,:].values
+    
+    interpolated2d = []
 
-    interpolated = interpolate_kdtree2d(data_in, x2, y2, elem, lon, lat, radius_of_influence=100000)
+    
+    depth_limit_up = 0
+    depth_limit_down = 2
+    time_start = 0
+    time_end = 2
 
-    print(interpolated)
+    interpolated3d = np.zeros((time_end-time_start, depth_limit_down-depth_limit_up, len(x), len(y)))
+    for ttime in range(time_end-time_start):
+        for depth in range(depth_limit_up, depth_limit_down):
+            print(ttime)
+            data_in = data.temp[ttime, depth, :].values
+            interpolated = interpolate_kdtree2d(data_in, x2, y2, elem, lon, lat, radius_of_influence=100000)
+            interpolated3d[ttime, depth, :, :] = interpolated
+
+    out1 = xr.Dataset({variable_name:(['time', 'depth', 'lat', 'lon'], interpolated3d)},
+                     coords={'time':np.atleast_1d(data.time[time_start:time_end].data),
+                    'depth':data[depth_coord][depth_limit_up:depth_limit_down].data,
+                  'lon':(['lon'], x),
+                  'lat':(['lat'], y )
+                 })
+                 
+    out1.to_netcdf(args.data.replace(".nc", "_interpolated.nc"))
+    # data_in = data.temp[0,0,:].values
+
+    # interpolated = interpolate_kdtree2d(data_in, x2, y2, elem, lon, lat, radius_of_influence=100000)
+
+    print(out1)
 
 
 if __name__ == "__main__":
     # args = parser.parse_args()
     # args.func(args)
     fint()
+
+
