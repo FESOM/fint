@@ -133,6 +133,29 @@ def parse_depths(depths, depths_from_file):
     # print(realdepths)
     return dinds, realdepths
 
+def parse_timesteps(timesteps, time_shape):
+
+    if len(timesteps.split(":")) == 2:
+        y = range(int(timesteps.split(":")[0]), int(timesteps.split(":")[1]))
+        # y = slice(int(timesteps.split(":")[0]), int(timesteps.split(":")[1]))
+    elif len(timesteps.split(":")) == 3:
+        if timesteps.split(":")[1] == "end":
+            stop = time_shape
+        else:
+            stop = int(timesteps.split(":")[1])
+        y = range(int(timesteps.split(":")[0]), stop, int(timesteps.split(":")[2]))
+        # y = slice(int(timesteps.split(":")[0]),
+        #           int(timesteps.split(":")[1]),
+        #           int(timesteps.split(":")[2]))
+    elif len(timesteps.split(",")) > 1:
+        y = list(map(int, timesteps.split(",")))
+    elif int(timesteps) == -1:
+        y = -1
+    else:
+        y = [int(timesteps)]
+    timesteps = y
+    print("timesteps {}".format(timesteps))
+    return timesteps
 
 def fint():
     parser = argparse.ArgumentParser(
@@ -152,7 +175,16 @@ def fint():
                                        -1 - all levels will be selected.",
     )
 
-    
+    parser.add_argument(
+        "--timesteps",
+        "-t",
+        default="-1",
+        type=str,
+        help="Explicitly define timesteps of the input fields. There are several oprions:\
+            '-1' - all time steps, number - one time step (e.g. '5'), numbers - coma separated (e.g. '0, 3, 8, 10'), slice - e.g. '5:10',\
+            slice with steps - e.g. '8:120:12'.\
+            slice untill the end of the time series - e.g. '8:end:12'.",
+    )
 
     args = parser.parse_args()
     data = xr.open_dataset(args.data)
@@ -169,6 +201,16 @@ def fint():
     else:
         dinds = [0]
         realdepths = [0]
+
+    time_shape = data.time.shape[0]
+    timesteps = parse_timesteps(args.timesteps, time_shape)
+    if timesteps == -1:
+        timesteps = range(time_shape)
+    # set timestep to 0 if data have only one time step
+    if time_shape == 1:
+        timesteps = [0]
+
+    print(timesteps)
 
 
 
@@ -187,16 +229,16 @@ def fint():
     time_start = 0
     time_end = 5
     distances, inds = create_indexes_and_distances(x2, y2, lon, lat, k=1, workers=4)
-    interpolated3d = np.zeros((time_end-time_start, len(realdepths), len(x), len(y)))
-    for ttime in range(time_end-time_start):
-        for i, (dind, realdepth) in enumerate(zip(dinds, realdepths)):
+    interpolated3d = np.zeros((len(timesteps), len(realdepths), len(x), len(y)))
+    for t_index, ttime in enumerate(timesteps):
+        for d_index, (dind, realdepth) in enumerate(zip(dinds, realdepths)):
             print(ttime)
             data_in = data[variable_name][ttime, dind, :].values
             interpolated = interpolate_kdtree2d(data_in, x2, y2, elem, lon, lat, distances, inds, radius_of_influence=100000)
-            interpolated3d[ttime, i, :, :] = interpolated
+            interpolated3d[t_index, d_index, :, :] = interpolated
 
     out1 = xr.Dataset({variable_name:(['time', 'depth', 'lat', 'lon'], interpolated3d)},
-                     coords={'time':np.atleast_1d(data.time[time_start:time_end].data),
+                     coords={'time':np.atleast_1d(data.time.data[timesteps]),
                     'depth':realdepths,
                   'lon':(['lon'], x),
                   'lat':(['lat'], y )
