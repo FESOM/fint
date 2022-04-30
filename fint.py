@@ -214,11 +214,21 @@ def fint():
         help="Radius of influence for interpolation, in meters.",
     )
 
+    parser.add_argument(
+        "--map_projection",
+        "-m",
+        # nargs=4,
+        type=str,
+        # default="-180.0, 180.0, -80.0, 90.0",
+        help="Map boundaries in -180 180 -90 90 format that will be used for interpolation.",
+        # metavar=("LONMIN", "LONMAX", "LATMIN", "LATMAX"),
+    )
 
 
     args = parser.parse_args()
     data = xr.open_dataset(args.data)
     radius_of_influence = args.influence
+    projection = args.map_projection
 
     variable_name = list(data.data_vars)[0]
     dim_names = list(data.coords)
@@ -245,7 +255,7 @@ def fint():
 
     x2, y2, elem = load_mesh(args.meshpath)
 
-    x, y, lon, lat = define_region(args.box, args.res)
+    x, y, lon, lat = define_region(args.box, args.res, projection)
 
     depth_limit_up = 0
     depth_limit_down = 2
