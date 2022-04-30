@@ -13,7 +13,7 @@ import matplotlib.image as mpimg
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
 import gc
 import argparse
-
+from regions import define_region
 
 def lon_lat_to_cartesian(lon, lat, R=6371000):
     """
@@ -180,14 +180,45 @@ def fint():
         "-t",
         default="-1",
         type=str,
-        help="Explicitly define timesteps of the input fields. There are several oprions:\
+        help="Explicitly define timesteps of the input fields. There are several options:\
             '-1' - all time steps, number - one time step (e.g. '5'), numbers - coma separated (e.g. '0, 3, 8, 10'), slice - e.g. '5:10',\
             slice with steps - e.g. '8:120:12'.\
             slice untill the end of the time series - e.g. '8:end:12'.",
     )
 
+    parser.add_argument(
+        "--box",
+        "-b",
+        # nargs=4,
+        type=str,
+        default="-180.0, 180.0, -80.0, 90.0",
+        help="Map boundaries in -180 180 -90 90 format that will be used for interpolation.",
+        # metavar=("LONMIN", "LONMAX", "LATMIN", "LATMAX"),
+    )
+
+    parser.add_argument(
+        "--res",
+        "-r",
+        nargs=2,
+        type=int,
+        # default=(360, 170),
+        help="Number of points along each axis that will be used for interpolation (for lon and  lat).",
+        metavar=("N_POINTS_LON", "N_POINTS_LAT"),
+    )
+
+    parser.add_argument(
+        "--influence",
+        "-i",
+        default=80000,
+        type=float,
+        help="Radius of influence for interpolation, in meters.",
+    )
+
+
+
     args = parser.parse_args()
     data = xr.open_dataset(args.data)
+    radius_of_influence = args.influence
 
     variable_name = list(data.data_vars)[0]
     dim_names = list(data.coords)
@@ -212,29 +243,21 @@ def fint():
 
     print(timesteps)
 
-
-
     x2, y2, elem = load_mesh(args.meshpath)
 
-    left = -80
-    right = -30
-    bottom = 20
-    top = 60
-    x = np.linspace(left,right,100)
-    y = np.linspace(bottom,top,100)
-    lon, lat = np.meshgrid(x,y)
+    x, y, lon, lat = define_region(args.box, args.res)
 
     depth_limit_up = 0
     depth_limit_down = 2
     time_start = 0
     time_end = 5
     distances, inds = create_indexes_and_distances(x2, y2, lon, lat, k=1, workers=4)
-    interpolated3d = np.zeros((len(timesteps), len(realdepths), len(x), len(y)))
+    interpolated3d = np.zeros((len(timesteps), len(realdepths), len(y), len(x)))
     for t_index, ttime in enumerate(timesteps):
         for d_index, (dind, realdepth) in enumerate(zip(dinds, realdepths)):
             print(ttime)
             data_in = data[variable_name][ttime, dind, :].values
-            interpolated = interpolate_kdtree2d(data_in, x2, y2, elem, lon, lat, distances, inds, radius_of_influence=100000)
+            interpolated = interpolate_kdtree2d(data_in, x2, y2, elem, lon, lat, distances, inds, radius_of_influence=radius_of_influence)
             interpolated3d[t_index, d_index, :, :] = interpolated
 
     out1 = xr.Dataset({variable_name:(['time', 'depth', 'lat', 'lon'], interpolated3d)},
