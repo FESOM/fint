@@ -34,6 +34,10 @@ def define_region(box, res, projection=None):
         x, y, lon, lat = region_gs(res)
     elif box == "trop":
         x, y, lon, lat = region_trop(res)
+    elif box == "arctic":
+        x, y, lon, lat = region_arctic(res)
+    elif box == "gulf":
+        x, y, lon, lat = region_gulf(res)
     
     return x, y, lon, lat
 
@@ -64,6 +68,32 @@ def region_trop(res):
     x = np.linspace(left,right,lonNumber)
     y = np.linspace(bottom,top,latNumber)
     lon, lat = np.meshgrid(x,y)
+    
+    return x, y, lon, lat
+
+def region_arctic(res):
+    if not res is None:
+        lonNumber, latNumber = res
+    else:
+        lonNumber, latNumber = 500, 500
+    left = -180
+    right = 180
+    bottom = 60
+    top = 90
+    x, y, lon, lat = region_cartopy(f"{left},{right},{bottom},{top}", res, projection="np")
+    
+    return x, y, lon, lat
+
+def region_gulf(res):
+    if not res is None:
+        lonNumber, latNumber = res
+    else:
+        lonNumber, latNumber = 1000, 500
+    left = -80
+    right = -30
+    bottom = 20
+    top = 60
+    x, y, lon, lat = region_cartopy(f"{left},{right},{bottom},{top}", res, projection="mer")
     
     return x, y, lon, lat
 
