@@ -277,6 +277,14 @@ def fint():
         # metavar=("LONMIN", "LONMAX", "LATMIN", "LATMAX"),
     )
 
+    parser.add_argument(
+        "--ofile",
+        "-o",
+        # default="out.nc",
+        type=str,
+        help="Path to the output file. Default is ./out.nc.",
+    )
+
     args = parser.parse_args()
     data = xr.open_dataset(args.data)
     radius_of_influence = args.influence
@@ -286,6 +294,7 @@ def fint():
     dim_names = list(data.coords)
     interpolation = args.interp
     mask_file = args.mask
+    out_file = args.ofile
 
     if mask_file is not None:
         mask_data = xr.open_dataset(mask_file)
@@ -309,6 +318,12 @@ def fint():
     # set timestep to 0 if data have only one time step
     if time_shape == 1:
         timesteps = [0]
+
+    if out_file is None:
+        out_file = args.data.replace(
+            ".nc",
+            f"_interpolated_{args.box.replace(', ','_')}_{realdepths[0]}_{realdepths[-1]}_{timesteps[0]}_{timesteps[-1]}.nc",
+        )
 
     print(timesteps)
 
@@ -363,7 +378,7 @@ def fint():
         },
     )
 
-    out1.to_netcdf(args.data.replace(".nc", "_interpolated.nc"))
+    out1.to_netcdf(out_file)
 
     print(out1)
 
