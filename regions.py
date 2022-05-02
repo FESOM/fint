@@ -14,6 +14,24 @@ from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationB
 import gc
 import argparse
 
+def define_region_from_file(file):
+    data_region = xr.open_dataset(file)
+    if ("lon" not in data_region.data_vars) or ("lat" not in data_region.data_vars):
+        raise ValueError("No lon or lat in target file")
+    
+    lon = data_region.lon.values
+    lat = data_region.lat.values
+    
+    if len(lon.shape) == 1:
+        lon, lat = np.meshgrid(lon, lat)
+    elif len(lon.shape) == 2:
+        lon, lat = lon, lat
+    elif len(lon.shape) == 3:
+        lon, lat = lon[0,:], lat[0,:]
+    
+    x = np.linspace(lon.min(), lon.max(), lon.shape[1])
+    y = np.linspace(lat.min(), lat.max(), lat.shape[0])
+    return x, y, lon, lat
 
 def define_region(box, res, projection=None):
     if not projection is None:

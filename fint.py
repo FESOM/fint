@@ -17,7 +17,7 @@ import matplotlib.image as mpimg
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
 import gc
 import argparse
-from regions import define_region
+from regions import define_region, define_region_from_file
 import os
 
 
@@ -292,6 +292,13 @@ def fint():
         type=str,
         help="Path to the output file. Default is ./out.nc.",
     )
+    parser.add_argument(
+        "--target",
+        # "-o",
+        # default="./",
+        type=str,
+        help="Path to the output file. Default is ./out.nc.",
+    )
 
     args = parser.parse_args()
     data = xr.open_dataset(args.data)
@@ -329,9 +336,13 @@ def fint():
 
     if out_file is None:
         output_file = os.path.basename(args.data)
+        if args.target is None:
+            region = args.box.replace(', ','_')
+        else:
+            region = os.path.basename(args.target)
         out_file = output_file.replace(
             ".nc",
-            f"_interpolated_{args.box.replace(', ','_')}_{realdepths[0]}_{realdepths[-1]}_{timesteps[0]}_{timesteps[-1]}.nc",
+            f"_interpolated_{region}_{realdepths[0]}_{realdepths[-1]}_{timesteps[0]}_{timesteps[-1]}.nc",
         )
         out_path = os.path.join(args.odir, out_file)
 
@@ -339,7 +350,10 @@ def fint():
 
     x2, y2, elem = load_mesh(args.meshpath)
 
-    x, y, lon, lat = define_region(args.box, args.res, projection)
+    if args.target is None:
+        x, y, lon, lat = define_region(args.box, args.res, projection)
+    else:
+        x, y, lon, lat = define_region_from_file(args.target)
 
     if interpolation == "mtri_linear":
         no_cyclic_elem = get_no_cyclic(x2, elem)
