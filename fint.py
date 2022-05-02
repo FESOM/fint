@@ -18,6 +18,7 @@ from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationB
 import gc
 import argparse
 from regions import define_region
+import os
 
 
 def lon_lat_to_cartesian(lon, lat, R=6371000):
@@ -284,6 +285,13 @@ def fint():
         type=str,
         help="Path to the output file. Default is ./out.nc.",
     )
+    parser.add_argument(
+        "--odir",
+        # "-o",
+        # default="out.nc",
+        type=str,
+        help="Path to the output file. Default is ./out.nc.",
+    )
 
     args = parser.parse_args()
     data = xr.open_dataset(args.data)
@@ -320,10 +328,12 @@ def fint():
         timesteps = [0]
 
     if out_file is None:
-        out_file = args.data.replace(
+        output_file = os.path.basename(args.data)
+        out_file = output_file.replace(
             ".nc",
             f"_interpolated_{args.box.replace(', ','_')}_{realdepths[0]}_{realdepths[-1]}_{timesteps[0]}_{timesteps[-1]}.nc",
         )
+        out_path = os.path.join(args.odir, out_file)
 
     print(timesteps)
 
@@ -378,7 +388,7 @@ def fint():
         },
     )
 
-    out1.to_netcdf(out_file)
+    out1.to_netcdf(out_path)
 
     print(out1)
 

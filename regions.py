@@ -38,6 +38,8 @@ def define_region(box, res, projection=None):
         x, y, lon, lat = region_arctic(res)
     elif box == "gulf":
         x, y, lon, lat = region_gulf(res)
+    else:
+        raise ValueError("Unknown region")
     
     return x, y, lon, lat
 
