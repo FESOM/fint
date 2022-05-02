@@ -200,8 +200,8 @@ def fint():
     parser = argparse.ArgumentParser(
         prog="pfinterp", description="Interpolates FESOM2 data to regular grid."
     )
-    parser.add_argument("meshpath", help="Path to the mesh folder")
     parser.add_argument("data", help="Path to the data file")
+    parser.add_argument("meshpath", help="Path to the mesh folder")
     parser.add_argument(
         "--depths",
         "-d",
@@ -288,7 +288,7 @@ def fint():
     parser.add_argument(
         "--odir",
         # "-o",
-        # default="out.nc",
+        default="./",
         type=str,
         help="Path to the output file. Default is ./out.nc.",
     )
