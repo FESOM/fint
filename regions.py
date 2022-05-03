@@ -14,6 +14,7 @@ from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationB
 import gc
 import argparse
 
+
 def define_region_from_file(file):
     data_region = xr.open_dataset(file)
     if ("lon" not in data_region.data_vars) or ("lat" not in data_region.data_vars):

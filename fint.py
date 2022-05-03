@@ -19,6 +19,8 @@ import gc
 import argparse
 from regions import define_region, define_region_from_file
 import os
+import shapely.vectorized
+from ut import update_attrs
 
 
 def lon_lat_to_cartesian(lon, lat, R=6371000):
@@ -85,6 +87,38 @@ def ind_for_depth(depth, depths_from_file):
     dind = i
     return dind
 
+def mask_ne(lonreg2, latreg2):
+    """ Mask earth from lon/lat data using Natural Earth.
+    Parameters
+    ----------
+    lonreg2: float, np.array
+        2D array of longitudes
+    latreg2: float, np.array
+        2D array of latitudes
+    Returns
+    -------
+    m2: bool, np.array
+        2D mask with True where the ocean is.
+    """
+    nearth = cfeature.NaturalEarthFeature("physical", "ocean", "50m")
+    main_geom = [contour for contour in nearth.geometries()][0]
+
+    mask = shapely.vectorized.contains(main_geom, lonreg2, latreg2)
+    m2 = np.where(((lonreg2 == -180.0) & (latreg2 > 71.5)), True, mask)
+    m2 = np.where(
+        ((lonreg2 == -180.0) & (latreg2 < 70.95) & (latreg2 > 68.96)), True, m2
+    )
+    m2 = np.where(((lonreg2 == 180.0) & (latreg2 > 71.5)), True, mask)
+    m2 = np.where(
+        ((lonreg2 == 180.0) & (latreg2 < 70.95) & (latreg2 > 68.96)), True, m2
+    )
+    # m2 = np.where(
+    #        ((lonreg2 == 180.0) & (latreg2 > -75.0) & (latreg2 < 0)), True, m2
+    #    )
+    m2 = np.where(((lonreg2 == -180.0) & (latreg2 < 65.33)), True, m2)
+    m2 = np.where(((lonreg2 == 180.0) & (latreg2 < 65.33)), True, m2)
+
+    return ~m2
 
 def load_mesh(mesh_path):
     nodes = pd.read_csv(
@@ -300,22 +334,35 @@ def fint():
         help="Path to the output file. Default is ./out.nc.",
     )
 
+    parser.add_argument(
+        "--no_shape_mask",
+        action="store_true",
+        help="Do not apply shapely mask by default"
+    )
+
     args = parser.parse_args()
+
+    # we will extract some arguments and will not pass just args to function,
+    # because we should keep functions extractable from the code.
     data = xr.open_dataset(args.data)
     radius_of_influence = args.influence
     projection = args.map_projection
-
+    
+    # not the most elegant way, but let's assume that we have only one variable
     variable_name = list(data.data_vars)[0]
     dim_names = list(data.coords)
     interpolation = args.interp
     mask_file = args.mask
     out_file = args.ofile
-
+ 
+    #open mask file if needed
     if mask_file is not None:
         mask_data = xr.open_dataset(mask_file)
+        #again assume we have only one variable inside
         mask_variable_name = list(mask_data.data_vars)[0]
         mask_data = mask_data[mask_variable_name]
 
+    # if data have depth, parse depths
     if ("nz1" in data.dims) or ("nz" in data.dims):
         depth_coord = dim_names[0]
         depths_from_file = data[depth_coord].values
@@ -326,6 +373,7 @@ def fint():
         dinds = [0]
         realdepths = [0]
 
+    # prepear time steps
     time_shape = data.time.shape[0]
     timesteps = parse_timesteps(args.timesteps, time_shape)
     if timesteps == -1:
@@ -334,10 +382,11 @@ def fint():
     if time_shape == 1:
         timesteps = [0]
 
+    # prepear output file name and path
     if out_file is None:
         output_file = os.path.basename(args.data)
         if args.target is None:
-            region = args.box.replace(', ','_')
+            region = args.box.replace(", ", "_")
         else:
             region = os.path.basename(args.target)
         out_file = output_file.replace(
@@ -346,15 +395,21 @@ def fint():
         )
         out_path = os.path.join(args.odir, out_file)
 
-    print(timesteps)
+    # print(timesteps)
 
     x2, y2, elem = load_mesh(args.meshpath)
 
+    # define region of interpolation
     if args.target is None:
         x, y, lon, lat = define_region(args.box, args.res, projection)
     else:
         x, y, lon, lat = define_region_from_file(args.target)
 
+    # if we want to use shapelly mask, load it
+    if args.no_shape_mask is False:
+        m2 = mask_ne(lon, lat)
+
+    # additional variables, that we need for sifferent interplations
     if interpolation == "mtri_linear":
         no_cyclic_elem = get_no_cyclic(x2, elem)
         triang2 = mtri.Triangulation(x2, y2, elem[no_cyclic_elem])
@@ -362,12 +417,17 @@ def fint():
     elif interpolation == "nn":
         distances, inds = create_indexes_and_distances(x2, y2, lon, lat, k=1, workers=4)
 
+    # we will fill this array with interpolated values
     interpolated3d = np.zeros((len(timesteps), len(realdepths), len(y), len(x)))
+
+    # main loop
     for t_index, ttime in enumerate(timesteps):
         for d_index, (dind, realdepth) in enumerate(zip(dinds, realdepths)):
-            print(ttime)
+            # print(ttime)
             data_in = data[variable_name][ttime, dind, :].values
             if interpolation == "mtri_linear":
+                # we don't use shapely mask with this method
+                args.no_shape_mask = True
                 if mask_file is None:
                     triang2 = mask_triangulation(data_in, triang2, elem, no_cyclic_elem)
                 interpolated = interpolate_triangulation(
@@ -385,13 +445,20 @@ def fint():
                     inds,
                     radius_of_influence=radius_of_influence,
                 )
+            # masking of the data
             if mask_file is not None:
                 mask_level = mask_data[0, dind, :, :].values
                 mask = np.ma.masked_invalid(mask_level).mask
                 interpolated[mask] = np.nan
+            elif args.no_shape_mask is False:
+                interpolated[m2] = np.nan
 
             interpolated3d[t_index, d_index, :, :] = interpolated
 
+    # save data (always 4D array)
+    
+    attributes = update_attrs(data.attrs, args)
+    data.attrs.update(attributes)
     out1 = xr.Dataset(
         {variable_name: (["time", "depth", "lat", "lon"], interpolated3d)},
         coords={
@@ -399,7 +466,10 @@ def fint():
             "depth": realdepths,
             "lon": (["lon"], x),
             "lat": (["lat"], y),
+            "longitude": (["lon", "lat"], lon),
+            "latitude": (["lon", "lat"], lat)
         },
+        attrs=data.attrs,
     )
 
     out1.to_netcdf(out_path)
