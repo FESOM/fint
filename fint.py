@@ -181,8 +181,13 @@ def interpolate_triangulation(
 
 
 def parse_depths(depths, depths_from_file):
+    depth_type = "list"
     if len(depths.split(",")) > 1:
         depths = list(map(int, depths.split(",")))
+    elif len(depths.split(":")) == 2:
+        depth_min = int(depths.split(":")[0])
+        depth_max = int(depths.split(":")[1])
+        depth_type = "range"
     elif int(depths) == -1:
         depths = [-1]
     else:
@@ -191,14 +196,20 @@ def parse_depths(depths, depths_from_file):
     if depths[0] == -1:
         dinds = range(depths_from_file.shape[0])
         realdepths = depths_from_file
-
     else:
         dinds = []
         realdepths = []
-        for depth in depths:
-            ddepth = ind_for_depth(depth, depths_from_file)
-            dinds.append(ddepth)
-            realdepths.append(depths_from_file[ddepth])
+        if depth_type == "list":
+            for depth in depths:
+                ddepth = ind_for_depth(depth, depths_from_file)
+                dinds.append(ddepth)
+                realdepths.append(depths_from_file[ddepth])
+        elif depth_type == "range":
+            ind_min = ind_for_depth(depth_min, depths_from_file)
+            ind_max = ind_for_depth(depth_max, depths_from_file)
+            for depth in np.array(depths_from_file)[ind_min:ind_max]:
+                dinds.append(ind_for_depth(depth, depths_from_file))
+                realdepths.append(depth)
     return dinds, realdepths
 
 
@@ -238,6 +249,7 @@ def fint():
             Closest values from model levels will be taken.\
             Several options available: number - e.g. '100',\
                                        coma separated list - e.g. '0,10,100,200',\
+                                       slice 0:100 \
                                        -1 - all levels will be selected.",
     )
 
