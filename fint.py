@@ -64,7 +64,7 @@ def create_indexes_and_distances(model_lon, model_lat, lons, lats, k=1, workers=
     xt, yt, zt = lon_lat_to_cartesian(lons.flatten(), lats.flatten())
 
     tree = cKDTree(list(zip(xs, ys, zs)))
-    distances, inds = tree.query(list(zip(xt, yt, zt)), k=k, workers=workers)
+    distances, inds = tree.query(list(zip(xt, yt, zt)), k=k)
 
     return distances, inds
 
