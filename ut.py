@@ -298,3 +298,39 @@ def vec_rotate_r2g(al, be, ga, lon, lat, urot, vrot, flag):
     v = np.array(v)
 
     return (u, v)
+
+def get_data_2d(datas, variable_names, ttime, dind, dimension_order, rotate, x2, y2):
+    
+    if len(datas[0].dims) == 2:
+        data_in = datas[0][variable_names[0]][ttime, :].values
+        if rotate:
+            data_in2 = datas[1][variable_names[1]][ttime, :].values
+            uu, vv = vec_rotate_r2g(50, 15, -90, x2, y2, data_in, data_in2, flag=1)
+            print('We are rotating data')
+            print(len(x2))
+            data_in = uu
+            data_in2 = vv
+    elif dimension_order == "normal":
+        data_in = datas[0][variable_names[0]][ttime, dind, :].values
+        if rotate:
+            data_in2 = datas[1][variable_names[1]][ttime, dind, :].values
+            uu, vv = vec_rotate_r2g(50, 15, -90, x2, y2, data_in, data_in2, flag=1)
+            print('We are rotating data')
+            print(len(x2))
+            data_in = uu
+            data_in2 = vv
+    elif dimension_order == "transpose":
+        data_in = datas[0][variable_names[0]][ttime, :, dind].values
+        if rotate:
+            data_in2 = datas[1][variable_names[1]][ttime, :, dind].values
+            uu, vv = vec_rotate_r2g(50, 15, -90, x2, y2, data_in, data_in2, flag=1)
+            print('We are rotating data')
+            print(len(x2))
+            data_in = uu
+            data_in2 = vv
+    if len(datas)==1:
+        return data_in
+    elif len(datas)==2:
+        return data_in, data_in2
+
+

@@ -21,7 +21,7 @@ import argparse
 from regions import define_region, define_region_from_file
 import os
 import shapely.vectorized
-from ut import update_attrs, nodes_or_ements, compute_face_coords, get_company_name, vec_rotate_r2g
+from ut import update_attrs, nodes_or_ements, compute_face_coords, get_company_name, get_data_2d
 
 
 def lon_lat_to_cartesian(lon, lat, R=6371000):
@@ -363,9 +363,14 @@ def fint():
         depth_coord = dim_names[0]
         depths_from_file = data[depth_coord].values
         dinds, realdepths = parse_depths(args.depths, depths_from_file)
+        if (data[variable_name].dims[1]=="nz") or (data[variable_name].dims[1]=="nz1"):
+            dimension_order = "normal"
+        else:
+            dimension_order = "transpose"
     else:
         dinds = [0]
         realdepths = [0]
+        dimension_order = "normal"
 
     # prepear time steps
     time_shape = data.time.shape[0]
@@ -440,14 +445,13 @@ def fint():
     for t_index, ttime in enumerate(timesteps):
         for d_index, (dind, realdepth) in enumerate(zip(dinds, realdepths)):
             # print(ttime)
-            data_in = data[variable_name][ttime, dind, :].values
+            
+            
             if args.rotate:
-                data_in2 = data2[variable_name2][ttime, dind, :].values
-                uu, vv = vec_rotate_r2g(50, 15, -90, x2, y2, data_in, data_in2, flag=1)
-                print('We are rotating data')
-                print(len(x2))
-                data_in = uu
-                data_in2 = vv
+                data_in, data_in2 = get_data_2d([data, data2], [variable_name, variable_name2], ttime, dind, dimension_order, args.rotate, x2, y2)
+            else:
+                data_in = get_data_2d([data], [variable_name], ttime, dind, dimension_order, args.rotate, x2, y2)
+           
 
             if interpolation == "mtri_linear":
                 # we don't use shapely mask with this method
