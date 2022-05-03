@@ -87,8 +87,9 @@ def ind_for_depth(depth, depths_from_file):
     dind = i
     return dind
 
+
 def mask_ne(lonreg2, latreg2):
-    """ Mask earth from lon/lat data using Natural Earth.
+    """Mask earth from lon/lat data using Natural Earth.
     Parameters
     ----------
     lonreg2: float, np.array
@@ -112,13 +113,11 @@ def mask_ne(lonreg2, latreg2):
     m2 = np.where(
         ((lonreg2 == 180.0) & (latreg2 < 70.95) & (latreg2 > 68.96)), True, m2
     )
-    # m2 = np.where(
-    #        ((lonreg2 == 180.0) & (latreg2 > -75.0) & (latreg2 < 0)), True, m2
-    #    )
     m2 = np.where(((lonreg2 == -180.0) & (latreg2 < 65.33)), True, m2)
     m2 = np.where(((lonreg2 == 180.0) & (latreg2 < 65.33)), True, m2)
 
     return ~m2
+
 
 def load_mesh(mesh_path):
     nodes = pd.read_csv(
@@ -187,7 +186,6 @@ def parse_depths(depths, depths_from_file):
         depths = [-1]
     else:
         depths = [int(depths)]
-    # print(depths)
 
     if depths[0] == -1:
         dinds = range(depths_from_file.shape[0])
@@ -200,8 +198,6 @@ def parse_depths(depths, depths_from_file):
             ddepth = ind_for_depth(depth, depths_from_file)
             dinds.append(ddepth)
             realdepths.append(depths_from_file[ddepth])
-    # print(dinds)
-    # print(realdepths)
     return dinds, realdepths
 
 
@@ -209,16 +205,12 @@ def parse_timesteps(timesteps, time_shape):
 
     if len(timesteps.split(":")) == 2:
         y = range(int(timesteps.split(":")[0]), int(timesteps.split(":")[1]))
-        # y = slice(int(timesteps.split(":")[0]), int(timesteps.split(":")[1]))
     elif len(timesteps.split(":")) == 3:
         if timesteps.split(":")[1] == "end":
             stop = time_shape
         else:
             stop = int(timesteps.split(":")[1])
         y = range(int(timesteps.split(":")[0]), stop, int(timesteps.split(":")[2]))
-        # y = slice(int(timesteps.split(":")[0]),
-        #           int(timesteps.split(":")[1]),
-        #           int(timesteps.split(":")[2]))
     elif len(timesteps.split(",")) > 1:
         y = list(map(int, timesteps.split(",")))
     elif int(timesteps) == -1:
@@ -262,11 +254,9 @@ def fint():
     parser.add_argument(
         "--box",
         "-b",
-        # nargs=4,
         type=str,
         default="-180.0, 180.0, -80.0, 90.0",
         help="Map boundaries in -180 180 -90 90 format that will be used for interpolation.",
-        # metavar=("LONMIN", "LONMAX", "LATMIN", "LATMAX"),
     )
 
     parser.add_argument(
@@ -274,7 +264,6 @@ def fint():
         "-r",
         nargs=2,
         type=int,
-        # default=(360, 170),
         help="Number of points along each axis that will be used for interpolation (for lon and  lat).",
         metavar=("N_POINTS_LON", "N_POINTS_LAT"),
     )
@@ -290,11 +279,8 @@ def fint():
     parser.add_argument(
         "--map_projection",
         "-m",
-        # nargs=4,
         type=str,
-        # default="-180.0, 180.0, -80.0, 90.0",
         help="Map boundaries in -180 180 -90 90 format that will be used for interpolation.",
-        # metavar=("LONMIN", "LONMAX", "LATMIN", "LATMAX"),
     )
     parser.add_argument(
         "--interp",
@@ -305,31 +291,24 @@ def fint():
 
     parser.add_argument(
         "--mask",
-        # nargs=4,
         type=str,
-        # default="-180.0, 180.0, -80.0, 90.0",
         help="Map boundaries in -180 180 -90 90 format that will be used for interpolation.",
-        # metavar=("LONMIN", "LONMAX", "LATMIN", "LATMAX"),
     )
 
     parser.add_argument(
         "--ofile",
         "-o",
-        # default="out.nc",
         type=str,
         help="Path to the output file. Default is ./out.nc.",
     )
     parser.add_argument(
         "--odir",
-        # "-o",
         default="./",
         type=str,
         help="Path to the output file. Default is ./out.nc.",
     )
     parser.add_argument(
         "--target",
-        # "-o",
-        # default="./",
         type=str,
         help="Path to the output file. Default is ./out.nc.",
     )
@@ -337,7 +316,7 @@ def fint():
     parser.add_argument(
         "--no_shape_mask",
         action="store_true",
-        help="Do not apply shapely mask by default"
+        help="Do not apply shapely mask by default",
     )
 
     args = parser.parse_args()
@@ -347,18 +326,18 @@ def fint():
     data = xr.open_dataset(args.data)
     radius_of_influence = args.influence
     projection = args.map_projection
-    
+
     # not the most elegant way, but let's assume that we have only one variable
     variable_name = list(data.data_vars)[0]
     dim_names = list(data.coords)
     interpolation = args.interp
     mask_file = args.mask
     out_file = args.ofile
- 
-    #open mask file if needed
+
+    # open mask file if needed
     if mask_file is not None:
         mask_data = xr.open_dataset(mask_file)
-        #again assume we have only one variable inside
+        # again assume we have only one variable inside
         mask_variable_name = list(mask_data.data_vars)[0]
         mask_data = mask_data[mask_variable_name]
 
@@ -456,7 +435,7 @@ def fint():
             interpolated3d[t_index, d_index, :, :] = interpolated
 
     # save data (always 4D array)
-    
+
     attributes = update_attrs(data.attrs, args)
     data.attrs.update(attributes)
     out1 = xr.Dataset(
@@ -467,7 +446,7 @@ def fint():
             "lon": (["lon"], x),
             "lat": (["lat"], y),
             "longitude": (["lon", "lat"], lon),
-            "latitude": (["lon", "lat"], lat)
+            "latitude": (["lon", "lat"], lat),
         },
         attrs=data.attrs,
     )

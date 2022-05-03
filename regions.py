@@ -1,7 +1,11 @@
 import xarray as xr
 import cartopy
 import numpy as np
-from scipy.interpolate import CloughTocher2DInterpolator, LinearNDInterpolator, NearestNDInterpolator
+from scipy.interpolate import (
+    CloughTocher2DInterpolator,
+    LinearNDInterpolator,
+    NearestNDInterpolator,
+)
 import matplotlib.tri as mtri
 import matplotlib.pylab as plt
 import pandas as pd
@@ -19,20 +23,21 @@ def define_region_from_file(file):
     data_region = xr.open_dataset(file)
     if ("lon" not in data_region.data_vars) or ("lat" not in data_region.data_vars):
         raise ValueError("No lon or lat in target file")
-    
+
     lon = data_region.lon.values
     lat = data_region.lat.values
-    
+
     if len(lon.shape) == 1:
         lon, lat = np.meshgrid(lon, lat)
     elif len(lon.shape) == 2:
         lon, lat = lon, lat
     elif len(lon.shape) == 3:
-        lon, lat = lon[0,:], lat[0,:]
-    
+        lon, lat = lon[0, :], lat[0, :]
+
     x = np.linspace(lon.min(), lon.max(), lon.shape[1])
     y = np.linspace(lat.min(), lat.max(), lat.shape[0])
     return x, y, lon, lat
+
 
 def define_region(box, res, projection=None):
     if not projection is None:
@@ -59,8 +64,9 @@ def define_region(box, res, projection=None):
         x, y, lon, lat = region_gulf(res)
     else:
         raise ValueError("Unknown region")
-    
+
     return x, y, lon, lat
+
 
 def region_gs(res):
     if not res is None:
@@ -71,11 +77,12 @@ def region_gs(res):
     right = -30
     bottom = 20
     top = 60
-    x = np.linspace(left,right,lonNumber)
-    y = np.linspace(bottom,top,latNumber)
-    lon, lat = np.meshgrid(x,y)
-    
+    x = np.linspace(left, right, lonNumber)
+    y = np.linspace(bottom, top, latNumber)
+    lon, lat = np.meshgrid(x, y)
+
     return x, y, lon, lat
+
 
 def region_trop(res):
     if not res is None:
@@ -86,11 +93,12 @@ def region_trop(res):
     right = 15
     bottom = -9.95
     top = 29.95
-    x = np.linspace(left,right,lonNumber)
-    y = np.linspace(bottom,top,latNumber)
-    lon, lat = np.meshgrid(x,y)
-    
+    x = np.linspace(left, right, lonNumber)
+    y = np.linspace(bottom, top, latNumber)
+    lon, lat = np.meshgrid(x, y)
+
     return x, y, lon, lat
+
 
 def region_arctic(res):
     if not res is None:
@@ -101,9 +109,12 @@ def region_arctic(res):
     right = 180
     bottom = 60
     top = 90
-    x, y, lon, lat = region_cartopy(f"{left},{right},{bottom},{top}", res, projection="np")
-    
+    x, y, lon, lat = region_cartopy(
+        f"{left},{right},{bottom},{top}", res, projection="np"
+    )
+
     return x, y, lon, lat
+
 
 def region_gulf(res):
     if not res is None:
@@ -114,16 +125,19 @@ def region_gulf(res):
     right = -30
     bottom = 20
     top = 60
-    x, y, lon, lat = region_cartopy(f"{left},{right},{bottom},{top}", res, projection="mer")
-    
+    x, y, lon, lat = region_cartopy(
+        f"{left},{right},{bottom},{top}", res, projection="mer"
+    )
+
     return x, y, lon, lat
 
-def region_cartopy(box, res, projection='mer'):
+
+def region_cartopy(box, res, projection="mer"):
     if projection == "mer":
         projection_ccrs = ccrs.Mercator()
     elif projection == "np":
         projection_ccrs = ccrs.NorthPolarStereo()
-        
+
     if not res is None:
         lonNumber, latNumber = res
     else:
@@ -135,12 +149,12 @@ def region_cartopy(box, res, projection='mer'):
     # bottom = 20
     # top = 60
     fig, ax = plt.subplots(
-                1,
-                1,
-                subplot_kw=dict(projection=projection_ccrs),
-                constrained_layout=True,
-                figsize=(10,10),
-            )
+        1,
+        1,
+        subplot_kw=dict(projection=projection_ccrs),
+        constrained_layout=True,
+        figsize=(10, 10),
+    )
     sstep = 10
     ax.set_extent([left, right, down, up], crs=ccrs.PlateCarree())
     # ax.coastlines(resolution = '110m',lw=0.5)
@@ -150,16 +164,16 @@ def region_cartopy(box, res, projection='mer'):
 
     # res = scl_fac * 300. # last number is the grid resolution in meters (NEEDS TO BE CHANGED)
     # nx = int((xmax-xmin)/res)+1; ny = int((ymax-ymin)/res)+1
-    x = np.linspace(xmin,xmax,lonNumber)
-    y = np.linspace(ymin,ymax,latNumber)
-    x2d, y2d = np.meshgrid(x,y)
+    x = np.linspace(xmin, xmax, lonNumber)
+    y = np.linspace(ymin, ymax, latNumber)
+    x2d, y2d = np.meshgrid(x, y)
     print(x.shape)
 
     npstere = ccrs.PlateCarree()
     # transformed2 =  npstere.transform_points(ccrs.NorthPolarStereo(), x, y)
-    transformed2 =  npstere.transform_points(projection_ccrs, x2d, y2d)
-    lon = transformed2[:,:,0]#.ravel()
-    lat = transformed2[:,:,1]#.ravel()
+    transformed2 = npstere.transform_points(projection_ccrs, x2d, y2d)
+    lon = transformed2[:, :, 0]  # .ravel()
+    lat = transformed2[:, :, 1]  # .ravel()
     print(lon.shape)
 
     # left = -60
@@ -169,5 +183,5 @@ def region_cartopy(box, res, projection='mer'):
     # x = np.linspace(left,right,lonNumber)
     # y = np.linspace(bottom,top,latNumber)
     # lon, lat = np.meshgrid(x,y)
-    
+
     return x, y, lon, lat
