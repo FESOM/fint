@@ -1,3 +1,4 @@
+from platform import node
 import xarray as xr
 import cartopy
 import numpy as np
@@ -20,7 +21,7 @@ import argparse
 from regions import define_region, define_region_from_file
 import os
 import shapely.vectorized
-from ut import update_attrs
+from ut import update_attrs, nodes_or_ements, compute_face_coords, get_company_name
 
 
 def lon_lat_to_cartesian(lon, lat, R=6371000):
@@ -318,17 +319,33 @@ def fint():
         action="store_true",
         help="Do not apply shapely mask by default",
     )
-
+    parser.add_argument(
+        "--rotate",
+        action="store_true",
+        help="Rotate variable",
+    )
     args = parser.parse_args()
 
     # we will extract some arguments and will not pass just args to function,
     # because we should keep functions extractable from the code.
     data = xr.open_dataset(args.data)
+    variable_name = list(data.data_vars)[0]
+    data_file = os.path.basename(args.data)  
+    if args.rotate:
+        data_file_ori = data_file
+        variable_name_orig = variable_name  
+        company_name = get_company_name(variable_name)
+        variable_name = company_name[0]
+        variable_name2 = company_name[1]
+        data_file = data_file_ori.replace(variable_name_orig, variable_name)
+        data_file2 = data_file_ori.replace(variable_name_orig, variable_name2)
+        data = xr.open_dataset(args.data.replace(data_file_ori, data_file))
+        data2 = xr.open_dataset(args.data.replace(data_file_ori, data_file2))
     radius_of_influence = args.influence
     projection = args.map_projection
 
     # not the most elegant way, but let's assume that we have only one variable
-    variable_name = list(data.data_vars)[0]
+
     dim_names = list(data.coords)
     interpolation = args.interp
     mask_file = args.mask
@@ -345,9 +362,7 @@ def fint():
     if ("nz1" in data.dims) or ("nz" in data.dims):
         depth_coord = dim_names[0]
         depths_from_file = data[depth_coord].values
-        # print(data)
         dinds, realdepths = parse_depths(args.depths, depths_from_file)
-        # print(dinds)
     else:
         dinds = [0]
         realdepths = [0]
@@ -363,7 +378,10 @@ def fint():
 
     # prepear output file name and path
     if out_file is None:
-        output_file = os.path.basename(args.data)
+        output_file = os.path.basename(data_file)
+        if args.rotate:
+            output_file2 = os.path.basename(data_file2)
+
         if args.target is None:
             region = args.box.replace(", ", "_")
         else:
@@ -372,11 +390,28 @@ def fint():
             ".nc",
             f"_interpolated_{region}_{realdepths[0]}_{realdepths[-1]}_{timesteps[0]}_{timesteps[-1]}.nc",
         )
+        if args.rotate:
+            out_file2 = output_file2.replace(
+                ".nc",
+                f"_interpolated_{region}_{realdepths[0]}_{realdepths[-1]}_{timesteps[0]}_{timesteps[-1]}.nc",
+            )
         out_path = os.path.join(args.odir, out_file)
+        if args.rotate:
+            out_path2 = os.path.join(args.odir, out_file2)
 
     # print(timesteps)
 
     x2, y2, elem = load_mesh(args.meshpath)
+
+    placement = nodes_or_ements(data, variable_name, len(x2), len(elem))
+    if placement == "elements":
+        if args.interp == "mtri_linear":
+            raise ValueError("mtri_linear interpolation is not supported for elements")
+        face_x, face_y = compute_face_coords(x2, y2, elem)
+        x2, y2 = face_x, face_y
+
+
+    # print(placement)
 
     # define region of interpolation
     if args.target is None:
@@ -398,20 +433,30 @@ def fint():
 
     # we will fill this array with interpolated values
     interpolated3d = np.zeros((len(timesteps), len(realdepths), len(y), len(x)))
+    if args.rotate:
+        interpolated3d2 = np.zeros((len(timesteps), len(realdepths), len(y), len(x)))
 
     # main loop
     for t_index, ttime in enumerate(timesteps):
         for d_index, (dind, realdepth) in enumerate(zip(dinds, realdepths)):
             # print(ttime)
             data_in = data[variable_name][ttime, dind, :].values
+            if args.rotate:
+                data_in2 = data2[variable_name2][ttime, dind, :].values
             if interpolation == "mtri_linear":
                 # we don't use shapely mask with this method
                 args.no_shape_mask = True
                 if mask_file is None:
                     triang2 = mask_triangulation(data_in, triang2, elem, no_cyclic_elem)
+                    if args.rotate:
+                        triang2_2 = mask_triangulation(data_in2, triang2, elem, no_cyclic_elem)
                 interpolated = interpolate_triangulation(
                     data_in, triang2, trifinder, x2, y2, lon, lat, elem, no_cyclic_elem
                 )
+                if args.rotate:
+                    interpolated2 = interpolate_triangulation(
+                        data_in2, triang2_2, trifinder, x2, y2, lon, lat, elem, no_cyclic_elem
+                    )
             elif interpolation == "nn":
                 interpolated = interpolate_kdtree2d(
                     data_in,
@@ -424,20 +469,43 @@ def fint():
                     inds,
                     radius_of_influence=radius_of_influence,
                 )
+                if args.rotate:
+                    interpolated2 = interpolate_kdtree2d(
+                        data_in2,
+                        x2,
+                        y2,
+                        elem,
+                        lon,
+                        lat,
+                        distances,
+                        inds,
+                        radius_of_influence=radius_of_influence,
+                    )
             # masking of the data
             if mask_file is not None:
                 mask_level = mask_data[0, dind, :, :].values
                 mask = np.ma.masked_invalid(mask_level).mask
                 interpolated[mask] = np.nan
+                if args.rotate:
+                    interpolated2[mask] = np.nan
             elif args.no_shape_mask is False:
                 interpolated[m2] = np.nan
+                if args.rotate:
+                    interpolated2[m2] = np.nan
 
             interpolated3d[t_index, d_index, :, :] = interpolated
+            if args.rotate:
+                interpolated3d2[t_index, d_index, :, :] = interpolated2
 
     # save data (always 4D array)
 
     attributes = update_attrs(data.attrs, args)
+    if args.rotate:
+        attributes2 = update_attrs(data2.attrs, args)
     data.attrs.update(attributes)
+    if args.rotate:
+        data2.attrs.update(attributes2)
+
     out1 = xr.Dataset(
         {variable_name: (["time", "depth", "lat", "lon"], interpolated3d)},
         coords={
@@ -450,8 +518,23 @@ def fint():
         },
         attrs=data.attrs,
     )
+    if args.rotate:
+        out2 = xr.Dataset(
+            {variable_name2: (["time", "depth", "lat", "lon"], interpolated3d2)},
+            coords={
+                "time": np.atleast_1d(data2.time.data[timesteps]),
+                "depth": realdepths,
+                "lon": (["lon"], x),
+                "lat": (["lat"], y),
+                "longitude": (["lon", "lat"], lon),
+                "latitude": (["lon", "lat"], lat),
+            },
+            attrs=data2.attrs,
+        )
 
     out1.to_netcdf(out_path)
+    if args.rotate:
+        out2.to_netcdf(out_path2)
 
     print(out1)
 
