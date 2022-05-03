@@ -21,7 +21,7 @@ import argparse
 from regions import define_region, define_region_from_file
 import os
 import shapely.vectorized
-from ut import update_attrs, nodes_or_ements, compute_face_coords, get_company_name
+from ut import update_attrs, nodes_or_ements, compute_face_coords, get_company_name, vec_rotate_r2g
 
 
 def lon_lat_to_cartesian(lon, lat, R=6371000):
@@ -398,8 +398,11 @@ def fint():
         out_path = os.path.join(args.odir, out_file)
         if args.rotate:
             out_path2 = os.path.join(args.odir, out_file2)
-
-    # print(timesteps)
+    else:
+        out_path = os.path.join(args.odir, out_file)
+        if args.rotate:
+            out_file2 = out_file.replace(".nc", "_2.nc")
+            out_path2 = os.path.join(args.odir, out_file2)
 
     x2, y2, elem = load_mesh(args.meshpath)
 
@@ -409,9 +412,6 @@ def fint():
             raise ValueError("mtri_linear interpolation is not supported for elements")
         face_x, face_y = compute_face_coords(x2, y2, elem)
         x2, y2 = face_x, face_y
-
-
-    # print(placement)
 
     # define region of interpolation
     if args.target is None:
@@ -443,6 +443,12 @@ def fint():
             data_in = data[variable_name][ttime, dind, :].values
             if args.rotate:
                 data_in2 = data2[variable_name2][ttime, dind, :].values
+                uu, vv = vec_rotate_r2g(50, 15, -90, x2, y2, data_in, data_in2, flag=1)
+                print('We are rotating data')
+                print(len(x2))
+                data_in = uu
+                data_in2 = vv
+
             if interpolation == "mtri_linear":
                 # we don't use shapely mask with this method
                 args.no_shape_mask = True
