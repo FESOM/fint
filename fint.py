@@ -456,8 +456,7 @@ def fint():
     # main loop
     for t_index, ttime in enumerate(timesteps):
         for d_index, (dind, realdepth) in enumerate(zip(dinds, realdepths)):
-            # print(ttime)
-            
+            print(f"time: {ttime}, depth:{realdepth}")
             
             if args.rotate:
                 data_in, data_in2 = get_data_2d([data, data2], [variable_name, variable_name2], ttime, dind, dimension_order, args.rotate, x2, y2)
