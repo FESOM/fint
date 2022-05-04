@@ -11,17 +11,20 @@ import matplotlib.tri as mtri
 import matplotlib.pylab as plt
 import pandas as pd
 import matplotlib.cm as cm
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
 from scipy.spatial import cKDTree
 import matplotlib.image as mpimg
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
 import gc
 import argparse
-from regions import define_region, define_region_from_file
+from regions import define_region, define_region_from_file, mask_ne
 import os
-import shapely.vectorized
-from ut import update_attrs, nodes_or_ements, compute_face_coords, get_company_name, get_data_2d
+from ut import (
+    update_attrs,
+    nodes_or_ements,
+    compute_face_coords,
+    get_company_name,
+    get_data_2d,
+)
 
 
 def lon_lat_to_cartesian(lon, lat, R=6371000):
@@ -87,37 +90,6 @@ def ind_for_depth(depth, depths_from_file):
     v, i = min((v, i) for (i, v) in enumerate(arr))
     dind = i
     return dind
-
-
-def mask_ne(lonreg2, latreg2):
-    """Mask earth from lon/lat data using Natural Earth.
-    Parameters
-    ----------
-    lonreg2: float, np.array
-        2D array of longitudes
-    latreg2: float, np.array
-        2D array of latitudes
-    Returns
-    -------
-    m2: bool, np.array
-        2D mask with True where the ocean is.
-    """
-    nearth = cfeature.NaturalEarthFeature("physical", "ocean", "50m")
-    main_geom = [contour for contour in nearth.geometries()][0]
-
-    mask = shapely.vectorized.contains(main_geom, lonreg2, latreg2)
-    m2 = np.where(((lonreg2 == -180.0) & (latreg2 > 71.5)), True, mask)
-    m2 = np.where(
-        ((lonreg2 == -180.0) & (latreg2 < 70.95) & (latreg2 > 68.96)), True, m2
-    )
-    m2 = np.where(((lonreg2 == 180.0) & (latreg2 > 71.5)), True, mask)
-    m2 = np.where(
-        ((lonreg2 == 180.0) & (latreg2 < 70.95) & (latreg2 > 68.96)), True, m2
-    )
-    m2 = np.where(((lonreg2 == -180.0) & (latreg2 < 65.33)), True, m2)
-    m2 = np.where(((lonreg2 == 180.0) & (latreg2 < 65.33)), True, m2)
-
-    return ~m2
 
 
 def load_mesh(mesh_path):
@@ -342,10 +314,10 @@ def fint():
     # because we should keep functions extractable from the code.
     data = xr.open_dataset(args.data)
     variable_name = list(data.data_vars)[0]
-    data_file = os.path.basename(args.data)  
+    data_file = os.path.basename(args.data)
     if args.rotate:
         data_file_ori = data_file
-        variable_name_orig = variable_name  
+        variable_name_orig = variable_name
         company_name = get_company_name(variable_name)
         variable_name = company_name[0]
         variable_name2 = company_name[1]
@@ -375,7 +347,9 @@ def fint():
         depth_coord = dim_names[0]
         depths_from_file = data[depth_coord].values
         dinds, realdepths = parse_depths(args.depths, depths_from_file)
-        if (data[variable_name].dims[1]=="nz") or (data[variable_name].dims[1]=="nz1"):
+        if (data[variable_name].dims[1] == "nz") or (
+            data[variable_name].dims[1] == "nz1"
+        ):
             dimension_order = "normal"
         else:
             dimension_order = "transpose"
@@ -457,12 +431,29 @@ def fint():
     for t_index, ttime in enumerate(timesteps):
         for d_index, (dind, realdepth) in enumerate(zip(dinds, realdepths)):
             print(f"time: {ttime}, depth:{realdepth}")
-            
+
             if args.rotate:
-                data_in, data_in2 = get_data_2d([data, data2], [variable_name, variable_name2], ttime, dind, dimension_order, args.rotate, x2, y2)
+                data_in, data_in2 = get_data_2d(
+                    [data, data2],
+                    [variable_name, variable_name2],
+                    ttime,
+                    dind,
+                    dimension_order,
+                    args.rotate,
+                    x2,
+                    y2,
+                )
             else:
-                data_in = get_data_2d([data], [variable_name], ttime, dind, dimension_order, args.rotate, x2, y2)
-           
+                data_in = get_data_2d(
+                    [data],
+                    [variable_name],
+                    ttime,
+                    dind,
+                    dimension_order,
+                    args.rotate,
+                    x2,
+                    y2,
+                )
 
             if interpolation == "mtri_linear":
                 # we don't use shapely mask with this method
@@ -470,13 +461,23 @@ def fint():
                 if mask_file is None:
                     triang2 = mask_triangulation(data_in, triang2, elem, no_cyclic_elem)
                     if args.rotate:
-                        triang2_2 = mask_triangulation(data_in2, triang2, elem, no_cyclic_elem)
+                        triang2_2 = mask_triangulation(
+                            data_in2, triang2, elem, no_cyclic_elem
+                        )
                 interpolated = interpolate_triangulation(
                     data_in, triang2, trifinder, x2, y2, lon, lat, elem, no_cyclic_elem
                 )
                 if args.rotate:
                     interpolated2 = interpolate_triangulation(
-                        data_in2, triang2_2, trifinder, x2, y2, lon, lat, elem, no_cyclic_elem
+                        data_in2,
+                        triang2_2,
+                        trifinder,
+                        x2,
+                        y2,
+                        lon,
+                        lat,
+                        elem,
+                        no_cyclic_elem,
                     )
             elif interpolation == "nn":
                 interpolated = interpolate_kdtree2d(

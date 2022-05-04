@@ -10,13 +10,20 @@ import matplotlib.tri as mtri
 import matplotlib.pylab as plt
 import pandas as pd
 import matplotlib.cm as cm
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
+
+try:
+    import cartopy.crs as ccrs
+    import cartopy.feature as cfeature
+except ImportError:
+    print(
+        "Cartopy is not installed, interpolation to projected regions is not available."
+    )
 from scipy.spatial import cKDTree
 import matplotlib.image as mpimg
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
 import gc
 import argparse
+import shapely.vectorized
 
 
 def define_region_from_file(file):
@@ -185,3 +192,34 @@ def region_cartopy(box, res, projection="mer"):
     # lon, lat = np.meshgrid(x,y)
 
     return x, y, lon, lat
+
+
+def mask_ne(lonreg2, latreg2):
+    """Mask earth from lon/lat data using Natural Earth.
+    Parameters
+    ----------
+    lonreg2: float, np.array
+        2D array of longitudes
+    latreg2: float, np.array
+        2D array of latitudes
+    Returns
+    -------
+    m2: bool, np.array
+        2D mask with True where the ocean is.
+    """
+    nearth = cfeature.NaturalEarthFeature("physical", "ocean", "50m")
+    main_geom = [contour for contour in nearth.geometries()][0]
+
+    mask = shapely.vectorized.contains(main_geom, lonreg2, latreg2)
+    m2 = np.where(((lonreg2 == -180.0) & (latreg2 > 71.5)), True, mask)
+    m2 = np.where(
+        ((lonreg2 == -180.0) & (latreg2 < 70.95) & (latreg2 > 68.96)), True, m2
+    )
+    m2 = np.where(((lonreg2 == 180.0) & (latreg2 > 71.5)), True, mask)
+    m2 = np.where(
+        ((lonreg2 == 180.0) & (latreg2 < 70.95) & (latreg2 > 68.96)), True, m2
+    )
+    m2 = np.where(((lonreg2 == -180.0) & (latreg2 < 65.33)), True, m2)
+    m2 = np.where(((lonreg2 == 180.0) & (latreg2 < 65.33)), True, m2)
+
+    return ~m2
