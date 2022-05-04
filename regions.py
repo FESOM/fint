@@ -10,8 +10,12 @@ except ImportError:
         "Cartopy is not installed, interpolation to projected regions is not available."
     )
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
-import shapely.vectorized
-
+try:
+    import shapely.vectorized
+except ImportError:
+    print(
+        "Shapely is not installed, use --no_shape_mask to make things work with nearest neighbour interpolation."
+    )
 
 def define_region_from_file(file):
     data_region = xr.open_dataset(file)
