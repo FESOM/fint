@@ -1,15 +1,6 @@
 import xarray as xr
-import cartopy
 import numpy as np
-from scipy.interpolate import (
-    CloughTocher2DInterpolator,
-    LinearNDInterpolator,
-    NearestNDInterpolator,
-)
-import matplotlib.tri as mtri
 import matplotlib.pylab as plt
-import pandas as pd
-import matplotlib.cm as cm
 
 try:
     import cartopy.crs as ccrs
@@ -18,11 +9,7 @@ except ImportError:
     print(
         "Cartopy is not installed, interpolation to projected regions is not available."
     )
-from scipy.spatial import cKDTree
-import matplotlib.image as mpimg
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
-import gc
-import argparse
 import shapely.vectorized
 
 

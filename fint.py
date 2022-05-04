@@ -1,6 +1,5 @@
 from platform import node
 import xarray as xr
-import cartopy
 import numpy as np
 from scipy.interpolate import (
     CloughTocher2DInterpolator,
@@ -8,13 +7,8 @@ from scipy.interpolate import (
     NearestNDInterpolator,
 )
 import matplotlib.tri as mtri
-import matplotlib.pylab as plt
 import pandas as pd
-import matplotlib.cm as cm
 from scipy.spatial import cKDTree
-import matplotlib.image as mpimg
-from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
-import gc
 import argparse
 from regions import define_region, define_region_from_file, mask_ne
 import os
