@@ -13,14 +13,16 @@ def update_attrs(ds, args):
     ds["meshpath"] = os.path.abspath(args.meshpath)
     return ds
 
+
 def nodes_or_ements(data, variable_name, node_num, elem_num):
     if data[variable_name].shape[-1] == node_num:
         return "nodes"
     elif data[variable_name].shape[-1] == elem_num:
         return "elements"
 
+
 def compute_face_coords(x2, y2, elem):
-    """ Compute coordinates of elements (triangles)
+    """Compute coordinates of elements (triangles)
     Parameters:
     -----------
     mesh: mesh object
@@ -44,14 +46,26 @@ def compute_face_coords(x2, y2, elem):
     face_y = y2[elem].mean(axis=1)
     return face_x, face_y
 
+
 def get_company_name(variable_name):
     vector_vars = {}
     vector_vars["u"] = ["u", "v"]
     vector_vars["v"] = ["u", "v"]
     vector_vars["uice"] = ["uice", "vice"]
     vector_vars["vice"] = ["uice", "vice"]
+    vector_vars["unod"] = ["unod", "vnod"]
+    vector_vars["vnod"] = ["unod", "vnod"]
+    vector_vars["tau_x"] = ["tau_x", "tau_y"]
+    vector_vars["tau_y"] = ["tau_x", "tau_y"]
+    vector_vars["atmice_x"] = ["atmice_x", "atmice_y"]
+    vector_vars["atmice_y"] = ["atmice_x", "atmice_x"]
+    vector_vars["atmoce_x"] = ["atmoce_x", "atmoce_y"]
+    vector_vars["atmoce_y"] = ["atmoce_x", "atmoce_y"]
+    vector_vars["iceoce_x"] = ["iceoce_x", "iceoce_y"]
+    vector_vars["iceoce_y"] = ["iceoce_x", "iceoce_y"]
 
     return vector_vars[variable_name]
+
 
 def scalar_g2r(al, be, ga, lon, lat):
     """
@@ -96,9 +110,9 @@ def scalar_g2r(al, be, ga, lon, lat):
     rotate_matrix[2, 0] = np.sin(be) * np.sin(al)
     rotate_matrix[2, 1] = -np.sin(be) * np.cos(al)
     rotate_matrix[2, 2] = np.cos(be)
-    
-    #rotate_matrix = np.linalg.pinv(rotate_matrix)
-    
+
+    # rotate_matrix = np.linalg.pinv(rotate_matrix)
+
     lat = lat * rad
     lon = lon * rad
 
@@ -124,6 +138,7 @@ def scalar_g2r(al, be, ga, lon, lat):
     rlon = rlon / rad
 
     return (rlon, rlat)
+
 
 def scalar_r2g(al, be, ga, rlon, rlat):
     """
@@ -180,9 +195,7 @@ def scalar_r2g(al, be, ga, rlon, rlat):
     # Geographical Cartesian coordinates:
     xg = rotate_matrix[0, 0] * xr + rotate_matrix[0, 1] * yr + rotate_matrix[0, 2] * zr
     yg = rotate_matrix[1, 0] * xr + rotate_matrix[1, 1] * yr + rotate_matrix[1, 2] * zr
-    zg = (
-        rotate_matrix[2, 0] * xr + rotate_matrix[2, 1] * yr + rotate_matrix[2, 2] * zr
-    )
+    zg = rotate_matrix[2, 0] * xr + rotate_matrix[2, 1] * yr + rotate_matrix[2, 2] * zr
 
     # Geographical coordinates:
     lat = np.arcsin(zg)
@@ -257,8 +270,8 @@ def vec_rotate_r2g(al, be, ga, lon, lat, urot, vrot, flag):
     rotate_matrix[2, 1] = -np.sin(be) * np.cos(al)
     rotate_matrix[2, 2] = np.cos(be)
 
-    rotate_matrix = np.linalg.pinv(rotate_matrix) 
-    
+    rotate_matrix = np.linalg.pinv(rotate_matrix)
+
     rlat = rlat * rad
     rlon = rlon * rad
     lat = lat * rad
@@ -299,14 +312,15 @@ def vec_rotate_r2g(al, be, ga, lon, lat, urot, vrot, flag):
 
     return (u, v)
 
+
 def get_data_2d(datas, variable_names, ttime, dind, dimension_order, rotate, x2, y2):
-    
+
     if len(datas[0].dims) == 2:
         data_in = datas[0][variable_names[0]][ttime, :].values
         if rotate:
             data_in2 = datas[1][variable_names[1]][ttime, :].values
             uu, vv = vec_rotate_r2g(50, 15, -90, x2, y2, data_in, data_in2, flag=1)
-            print('We are rotating data')
+            print("We are rotating data")
             print(len(x2))
             data_in = uu
             data_in2 = vv
@@ -315,7 +329,7 @@ def get_data_2d(datas, variable_names, ttime, dind, dimension_order, rotate, x2,
         if rotate:
             data_in2 = datas[1][variable_names[1]][ttime, dind, :].values
             uu, vv = vec_rotate_r2g(50, 15, -90, x2, y2, data_in, data_in2, flag=1)
-            print('We are rotating data')
+            print("We are rotating data")
             print(len(x2))
             data_in = uu
             data_in2 = vv
@@ -324,13 +338,11 @@ def get_data_2d(datas, variable_names, ttime, dind, dimension_order, rotate, x2,
         if rotate:
             data_in2 = datas[1][variable_names[1]][ttime, :, dind].values
             uu, vv = vec_rotate_r2g(50, 15, -90, x2, y2, data_in, data_in2, flag=1)
-            print('We are rotating data')
+            print("We are rotating data")
             print(len(x2))
             data_in = uu
             data_in2 = vv
-    if len(datas)==1:
+    if len(datas) == 1:
         return data_in
-    elif len(datas)==2:
+    elif len(datas) == 2:
         return data_in, data_in2
-
-
