@@ -104,6 +104,8 @@ def load_mesh(mesh_path):
         names=["first_elem", "second_elem", "third_elem"],
     )
 
+    x2 = np.where(x2>180, x2-360, x2)
+
     elem = file_content.values - 1
 
     return x2, y2, elem
@@ -200,7 +202,7 @@ def parse_timesteps(timesteps, time_shape):
     return timesteps
 
 
-def fint():
+def fint(args=None):
     parser = argparse.ArgumentParser(
         prog="pfinterp", description="Interpolates FESOM2 data to regular grid."
     )
