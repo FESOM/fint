@@ -544,8 +544,8 @@ def fint(args=None):
                 "depth": realdepths,
                 "lon": (["lon"], x),
                 "lat": (["lat"], y),
-                "longitude": (["lon", "lat"], lon),
-                "latitude": (["lon", "lat"], lat),
+                "longitude": (["lat", "lon"], lon),
+                "latitude": (["lat", "lon"], lat),
             },
             attrs=data2.attrs,
         )
