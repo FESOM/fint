@@ -10,6 +10,7 @@ except ImportError:
         "Cartopy is not installed, interpolation to projected regions is not available."
     )
 from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
+
 try:
     import shapely.vectorized
 except ImportError:
@@ -17,9 +18,15 @@ except ImportError:
         "Shapely is not installed, use --no_shape_mask to make things work with nearest neighbour interpolation."
     )
 
+
 def define_region_from_file(file):
     data_region = xr.open_dataset(file)
-    if ("lon" not in data_region.data_vars) or ("lat" not in data_region.data_vars):
+    if (
+        ("lat" not in data_region.coords)
+        and ("lat" not in data_region.data_vars)
+        and ("lon" not in data_region.coords)
+        and ("lon" not in data_region.data_vars)
+    ):
         raise ValueError("No lon or lat in target file")
 
     lon = data_region.lon.values
