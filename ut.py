@@ -63,6 +63,8 @@ def get_company_name(variable_name):
     vector_vars["atmoce_y"] = ["atmoce_x", "atmoce_y"]
     vector_vars["iceoce_x"] = ["iceoce_x", "iceoce_y"]
     vector_vars["iceoce_y"] = ["iceoce_x", "iceoce_y"]
+    vector_vars["tx_sur"] = ["tx_sur", "ty_sur"]
+    vector_vars["ty_sur"] = ["tx_sur", "ty_sur"]
 
     return vector_vars[variable_name]
 
