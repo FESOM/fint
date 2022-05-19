@@ -557,7 +557,7 @@ def fint(args=None):
                                       'lon': {'_FillValue': False, 'dtype': np.dtype('single')},
                                       "longitude": {'_FillValue': False, 'dtype': np.dtype('single')},
                                       "latitude": {'_FillValue': False, 'dtype': np.dtype('single')},
-                                      variable_name: {'_FillValue': False, 'dtype': np.dtype('single')}
+                                      variable_name: {"zlib":True, "complevel":1, '_FillValue': False, 'dtype': np.dtype('single')}
                                       })
     if args.rotate:
         out2.to_netcdf(out_path2, encoding={'time': {'_FillValue': False, 'dtype': np.dtype('double')},
@@ -566,7 +566,7 @@ def fint(args=None):
                                       'lon': {'_FillValue': False, 'dtype': np.dtype('single')},
                                       "longitude": {'_FillValue': False, 'dtype': np.dtype('single')},
                                       "latitude": {'_FillValue': False, 'dtype': np.dtype('single')},
-                                      variable_name2: {'_FillValue': False, 'dtype': np.dtype('single')}})
+                                      variable_name2: {"zlib":True, "complevel":1, '_FillValue': False, 'dtype': np.dtype('single')}})
 
     print(out1)
 
