@@ -147,6 +147,13 @@ def interpolate_triangulation(
     )
     return interpolated
 
+def interpolate_linear_scipy(data_in, x2, y2, lon2, lat2):
+    points = np.vstack((x2, y2)).T
+    interpolated = LinearNDInterpolator(points, data_in)(
+        lon2, lat2
+    )
+    return interpolated
+
 
 def parse_depths(depths, depths_from_file):
     depth_type = "list"
@@ -265,7 +272,7 @@ def fint(args=None):
     )
     parser.add_argument(
         "--interp",
-        choices=["nn", "mtri_linear"],  # "idist", "linear", "cubic"],
+        choices=["nn", "mtri_linear", "linear_scipy"],  # "idist", "linear", "cubic"],
         default="nn",
         help="Interpolation method. Options are nn - nearest neighbor (KDTree implementation, fast), idist - inverse distance (KDTree implementation, decent speed), linear (scipy implementation, slow) and cubic (scipy implementation, slowest and give strange results on corarse meshes).",
     )
@@ -499,6 +506,11 @@ def fint(args=None):
                         inds,
                         radius_of_influence=radius_of_influence,
                     )
+            elif interpolation == "linear_scipy":
+                interpolated = interpolate_linear_scipy(data_in, x2, y2, lon, lat)
+                if args.rotate:
+                    interpolated2 = interpolate_linear_scipy(data_in2, x2, y2, lon, lat)
+            
             # masking of the data
             if mask_file is not None:
                 mask_level = mask_data[0, dind, :, :].values
