@@ -119,12 +119,13 @@ def get_no_cyclic(x2, elem):
 
 
 def interpolate_kdtree2d(
-    data_in, x2, y2, elem, lons, lats, distances, inds, radius_of_influence=100000
+    data_in, x2, y2, elem, lons, lats, distances, inds, radius_of_influence=100000, mask_zero=True
 ):
 
     interpolated = data_in[inds]
     interpolated[distances >= radius_of_influence] = np.nan
-    interpolated[interpolated == 0] = np.nan
+    if mask_zero:
+        interpolated[interpolated == 0] = np.nan
     interpolated.shape = lons.shape
 
     return interpolated
@@ -310,6 +311,12 @@ def fint(args=None):
         action="store_true",
         help="Rotate variable",
     )
+
+    parser.add_argument(
+        "--no_mask_zero",
+        action="store_false",
+        help="Do not apply shapely mask by default",
+    )
     args = parser.parse_args()
 
     # we will extract some arguments and will not pass just args to function,
@@ -492,6 +499,7 @@ def fint(args=None):
                     distances,
                     inds,
                     radius_of_influence=radius_of_influence,
+                    mask_zero=args.no_mask_zero,
                 )
                 if args.rotate:
                     interpolated2 = interpolate_kdtree2d(
@@ -504,6 +512,7 @@ def fint(args=None):
                         distances,
                         inds,
                         radius_of_influence=radius_of_influence,
+                        mask_zero=args.no_mask_zero,
                     )
             elif interpolation == "linear_scipy":
                 interpolated = interpolate_linear_scipy(data_in, x2, y2, lon, lat)

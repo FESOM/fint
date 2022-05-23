@@ -1,8 +1,8 @@
 #!/bin/bash
 set -o xtrace
 
-wget https://swift.dkrz.de/v1/dkrz_c719fbc3-98ea-446c-8e01-356dac22ed90/fint/test_fint.tar
-tar -xvf test_fint.tar
+# wget https://swift.dkrz.de/v1/dkrz_c719fbc3-98ea-446c-8e01-356dac22ed90/fint/test_fint.tar
+# tar -xvf test_fint.tar
 
 export FILE="./test/data/temp.fesom.1948.nc"
 export MESH="./test/mesh/pi/"
@@ -41,6 +41,7 @@ python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp mtri_linear -o mask.
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp mtri_linear --mask mask.nc 
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp nn --mask mask.nc 
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 500:3000  --interp nn --mask mask.nc 
+python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp nn #--no_mask_zero
 
 # interpolate to target grid
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 500:3000  --interp nn --target mask.nc 
@@ -61,6 +62,7 @@ python fint.py ${FILE} ${MESH} ${INFL} -t 0:3 -d 100:200
 # 3d elements, on interfaces
 FILE="./test/data/Av.fesom.1948.nc"
 python fint.py ${FILE} ${MESH} ${INFL} -t 0:3 -d -1  
+python fint.py ${FILE} ${MESH} ${INFL} -t 0:3 -d -1  --interp linear_scipy
 
 # 3d nodes, on interfaces
 FILE="./test/data/Kv.fesom.1948.nc"
