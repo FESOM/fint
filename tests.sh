@@ -41,7 +41,7 @@ python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp mtri_linear -o mask.
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp mtri_linear --mask mask.nc 
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp nn --mask mask.nc 
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 500:3000  --interp nn --mask mask.nc 
-python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp nn #--no_mask_zero
+python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp nn --no_mask_zero
 
 # interpolate to target grid
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 500:3000  --interp nn --target mask.nc 
