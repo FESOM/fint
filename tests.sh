@@ -1,8 +1,8 @@
 #!/bin/bash
 set -o xtrace
 
-# wget https://swift.dkrz.de/v1/dkrz_c719fbc3-98ea-446c-8e01-356dac22ed90/fint/test_fint.tar
-# tar -xvf test_fint.tar
+wget https://swift.dkrz.de/v1/dkrz_c719fbc3-98ea-446c-8e01-356dac22ed90/fint/test_fint.tar
+tar -xvf test_fint.tar
 
 export FILE="./test/data/temp.fesom.1948.nc"
 export MESH="./test/mesh/pi/"
