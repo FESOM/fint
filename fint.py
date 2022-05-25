@@ -119,7 +119,16 @@ def get_no_cyclic(x2, elem):
 
 
 def interpolate_kdtree2d(
-    data_in, x2, y2, elem, lons, lats, distances, inds, radius_of_influence=100000, mask_zero=True
+    data_in,
+    x2,
+    y2,
+    elem,
+    lons,
+    lats,
+    distances,
+    inds,
+    radius_of_influence=100000,
+    mask_zero=True,
 ):
 
     interpolated = data_in[inds]
@@ -328,6 +337,7 @@ def fint(args=None):
         data_file_ori = data_file
         variable_name_orig = variable_name
         company_name = get_company_name(variable_name)
+        print(company_name)
         variable_name = company_name[0]
         variable_name2 = company_name[1]
         data_file = data_file_ori.replace(variable_name_orig, variable_name)
@@ -543,7 +553,6 @@ def fint(args=None):
     data.attrs.update(attributes)
     if args.rotate:
         data2.attrs.update(attributes2)
-
     out1 = xr.Dataset(
         {variable_name: (["time", "depth", "lat", "lon"], interpolated3d)},
         coords={
@@ -575,11 +584,11 @@ def fint(args=None):
         out_path,
         encoding={
             "time": {"dtype": np.dtype("double")},
-            "depth": {"_FillValue": False, "dtype": np.dtype("single")},
-            "lat": {"_FillValue": False, "dtype": np.dtype("single")},
-            "lon": {"_FillValue": False, "dtype": np.dtype("single")},
-            "longitude": {"_FillValue": False, "dtype": np.dtype("single")},
-            "latitude": {"_FillValue": False, "dtype": np.dtype("single")},
+            "depth": {"dtype": np.dtype("single")},
+            "lat": {"dtype": np.dtype("single")},
+            "lon": {"dtype": np.dtype("single")},
+            "longitude": {"dtype": np.dtype("single")},
+            "latitude": {"dtype": np.dtype("single")},
             variable_name: {"zlib": True, "complevel": 1, "dtype": np.dtype("single")},
         },
     )
@@ -588,11 +597,11 @@ def fint(args=None):
             out_path2,
             encoding={
                 "time": {"dtype": np.dtype("double")},
-                "depth": {"_FillValue": False, "dtype": np.dtype("single")},
-                "lat": {"_FillValue": False, "dtype": np.dtype("single")},
-                "lon": {"_FillValue": False, "dtype": np.dtype("single")},
-                "longitude": {"_FillValue": False, "dtype": np.dtype("single")},
-                "latitude": {"_FillValue": False, "dtype": np.dtype("single")},
+                "depth": {"dtype": np.dtype("single")},
+                "lat": {"dtype": np.dtype("single")},
+                "lon": {"dtype": np.dtype("single")},
+                "longitude": {"dtype": np.dtype("single")},
+                "latitude": {"dtype": np.dtype("single")},
                 variable_name2: {
                     "zlib": True,
                     "complevel": 1,
