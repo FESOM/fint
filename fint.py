@@ -217,6 +217,12 @@ def parse_timesteps(timesteps, time_shape):
     print("timesteps {}".format(timesteps))
     return timesteps
 
+def parse_timedelta(timedelta_arg):
+    timedelta_val = timedelta_arg[:-1]
+    timedelta_unit = timedelta_arg[-1:]
+    timedelta = np.timedelta64(timedelta_val, timedelta_unit)
+
+    return timedelta
 
 def fint(args=None):
     parser = argparse.ArgumentParser(
@@ -325,6 +331,14 @@ def fint(args=None):
         "--no_mask_zero",
         action="store_false",
         help="Do not apply shapely mask by default",
+    )
+
+    parser.add_argument(
+        "--timedelta",
+        type=str,
+        help="Add timedelta to the time axis. The format is number followed by unit. E.g. '1D' or '10h'. \
+              Valid units are 'D' (days), 'h' (hours), 'm' (minutes), 's' (seconds). \
+              To substract timedelta, put argument in quotes, and prepend ' -', so SPACE and then -, e.g. ' -10D'."
     )
     args = parser.parse_args()
 
@@ -553,10 +567,17 @@ def fint(args=None):
     data.attrs.update(attributes)
     if args.rotate:
         data2.attrs.update(attributes2)
+    if args.timedelta:
+        timedelta = parse_timedelta(args.timedelta)
+        shifted_time = data.time.data[timesteps] + timedelta
+        out_time = np.atleast_1d(shifted_time)
+    else:
+        out_time = np.atleast_1d(data.time.data[timesteps])
+
     out1 = xr.Dataset(
         {variable_name: (["time", "depth", "lat", "lon"], interpolated3d)},
         coords={
-            "time": np.atleast_1d(data.time.data[timesteps]),
+            "time": out_time,
             "depth": realdepths,
             "lon": (["lon"], x),
             "lat": (["lat"], y),
@@ -569,7 +590,7 @@ def fint(args=None):
         out2 = xr.Dataset(
             {variable_name2: (["time", "depth", "lat", "lon"], interpolated3d2)},
             coords={
-                "time": np.atleast_1d(data2.time.data[timesteps]),
+                "time": out_time,
                 "depth": realdepths,
                 "lon": (["lon"], x),
                 "lat": (["lat"], y),
