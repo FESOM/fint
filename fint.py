@@ -584,11 +584,11 @@ def fint(args=None):
         out_path,
         encoding={
             "time": {"dtype": np.dtype("double")},
-            "depth": {"dtype": np.dtype("single")},
-            "lat": {"dtype": np.dtype("single")},
-            "lon": {"dtype": np.dtype("single")},
-            "longitude": {"dtype": np.dtype("single")},
-            "latitude": {"dtype": np.dtype("single")},
+            "depth": {"dtype": np.dtype("double")},
+            "lat": {"dtype": np.dtype("double")},
+            "lon": {"dtype": np.dtype("double")},
+            "longitude": {"dtype": np.dtype("double")},
+            "latitude": {"dtype": np.dtype("double")},
             variable_name: {"zlib": True, "complevel": 1, "dtype": np.dtype("single")},
         },
     )
@@ -597,11 +597,11 @@ def fint(args=None):
             out_path2,
             encoding={
                 "time": {"dtype": np.dtype("double")},
-                "depth": {"dtype": np.dtype("single")},
-                "lat": {"dtype": np.dtype("single")},
-                "lon": {"dtype": np.dtype("single")},
-                "longitude": {"dtype": np.dtype("single")},
-                "latitude": {"dtype": np.dtype("single")},
+                "depth": {"dtype": np.dtype("double")},
+                "lat": {"dtype": np.dtype("double")},
+                "lon": {"dtype": np.dtype("double")},
+                "longitude": {"dtype": np.dtype("double")},
+                "latitude": {"dtype": np.dtype("double")},
                 variable_name2: {
                     "zlib": True,
                     "complevel": 1,
