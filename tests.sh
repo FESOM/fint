@@ -74,4 +74,11 @@ FILE="./test/data/tx_sur.fesom.1948.nc"
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 0:20   
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 0:20 --rotate
 
+# timedelta
+export FILE="./test/data/temp.fesom.1948.nc"
+python fint.py ${FILE} ${MESH} ${INFL} -t 0:10 --timedelta '10D'
+python fint.py ${FILE} ${MESH} ${INFL} -t 0:10 --timedelta ' -10D'
+python fint.py ${FILE} ${MESH} ${INFL} -t 0:10 --timedelta '1h'
+python fint.py ${FILE} ${MESH} ${INFL} -t 0:10 --timedelta ' -1h'
+
 rm *.nc
