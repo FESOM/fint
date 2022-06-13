@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Install Conda environment from environment.yml
-        uses: mamba-org/provision-with-micromamba@main
+    - name: provision-with-micromamba
+      uses: mamba-org/provision-with-micromamba@v11
 
     - name: Run tests
         shell: bash -l {0}
