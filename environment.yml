@@ -1,0 +1,14 @@
+name: fint
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - xarray
+  - numpy
+  - scipy
+  - matplotlib
+  - pandas
+  - cartopy
+  - shapely
+  
