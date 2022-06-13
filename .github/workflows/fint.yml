@@ -7,6 +7,9 @@ on: [push]
 
 jobs:
   fint_test:
+    defaults:
+      run:
+        shell: bash -l {0}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -14,6 +17,5 @@ jobs:
       uses: mamba-org/provision-with-micromamba@v11
 
     - name: Run tests
-        shell: bash -l {0}
-        run: |
-          ./tests.sh
+      run: |
+        ./tests.sh
