@@ -228,8 +228,8 @@ def fint(args=None):
     parser = argparse.ArgumentParser(
         prog="pfinterp", description="Interpolates FESOM2 data to regular grid."
     )
-    parser.add_argument("data", help="Path to the data file")
-    parser.add_argument("meshpath", help="Path to the mesh folder")
+    parser.add_argument("data", help="Path to the FESOM2 output data file.")
+    parser.add_argument("meshpath", help="Path to the FESOM2 mesh folder.")
     parser.add_argument(
         "--depths",
         "-d",
@@ -259,7 +259,10 @@ def fint(args=None):
         "-b",
         type=str,
         default="-180.0, 180.0, -80.0, 90.0",
-        help="Map boundaries in -180 180 -90 90 format that will be used for interpolation.",
+        help="Several options are available:\
+            - Map boundaries in -180 180 -90 90 format that will be used for interpolation.\
+            - Use one of the predefined regions. Available: gs (Golf Stream), \
+                trop (Atlantic Tropics), arctic, gulf (also Golf Stream, but based on Mercator projection.)\))",
     )
 
     parser.add_argument(
@@ -276,61 +279,65 @@ def fint(args=None):
         "-i",
         default=80000,
         type=float,
-        help="Radius of influence for interpolation, in meters.",
+        help="Radius of influence for interpolation, in meters. Used for nearest neighbor interpolation.",
     )
 
     parser.add_argument(
         "--map_projection",
         "-m",
         type=str,
-        help="Map boundaries in -180 180 -90 90 format that will be used for interpolation.",
+        help="Map projection. Available: mer, np",
     )
     parser.add_argument(
         "--interp",
         choices=["nn", "mtri_linear", "linear_scipy"],  # "idist", "linear", "cubic"],
         default="nn",
-        help="Interpolation method. Options are nn - nearest neighbor (KDTree implementation, fast), idist - inverse distance (KDTree implementation, decent speed), linear (scipy implementation, slow) and cubic (scipy implementation, slowest and give strange results on corarse meshes).",
+        help="Interpolation method. Options are \
+            nn - nearest neighbor (KDTree implementation, fast), \
+            mtri_linear - linear, based on triangulation information (slow, but more precise)",
     )
 
     parser.add_argument(
         "--mask",
         type=str,
-        help="Map boundaries in -180 180 -90 90 format that will be used for interpolation.",
+        help="File with mask for interpolation. Mask should have the same coordinates as interpolated data. \
+            Usuall usecase is to use mtri_linear slow interpolation to create the mask, and then use this mask for faster (nn) interpolation.",
     )
 
     parser.add_argument(
         "--ofile",
         "-o",
         type=str,
-        help="Path to the output file. Default is ./out.nc.",
+        help="Path to the output file. Default is out.nc.",
     )
     parser.add_argument(
         "--odir",
         default="./",
         type=str,
-        help="Path to the output file. Default is ./out.nc.",
+        help="Path to the output directory. Default is ./",
     )
     parser.add_argument(
         "--target",
         type=str,
-        help="Path to the output file. Default is ./out.nc.",
+        help="Path to the target file, that contains coordinates of the target grid (as lon lat variables)",
     )
 
     parser.add_argument(
         "--no_shape_mask",
         action="store_true",
-        help="Do not apply shapely mask by default",
+        help="Do not apply shapely mask for coastlines. Useful for paleo applications.",
     )
     parser.add_argument(
         "--rotate",
         action="store_true",
-        help="Rotate variable",
+        help="Rotate vector variables to geographic coordinates. Use standard FESOM2 angles (this should be fine in 99.99 percent of cases:)).",
     )
 
     parser.add_argument(
         "--no_mask_zero",
         action="store_false",
-        help="Do not apply shapely mask by default",
+        help="FESOM2 use 0 as mask value, which is terrible for some variables. \
+            Solution is to create a mask using temperature or salinity, and then use this mask for interpolation, applying this option.",
     )
 
     parser.add_argument(
