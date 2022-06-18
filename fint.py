@@ -224,6 +224,81 @@ def parse_timedelta(timedelta_arg):
 
     return timedelta
 
+def save_data(data, args, timesteps, variable_name, interpolated3d, realdepths, x, y, lon, lat, out_path):
+    attributes = update_attrs(data.attrs, args)
+    # if args.rotate:
+    #     attributes2 = update_attrs(data2.attrs, args)
+    data.attrs.update(attributes)
+    # if args.rotate:
+    #     data2.attrs.update(attributes2)
+    if args.timedelta:
+        timedelta = parse_timedelta(args.timedelta)
+        shifted_time = data.time.data[timesteps] + timedelta
+        out_time = np.atleast_1d(shifted_time)
+    else:
+        out_time = np.atleast_1d(data.time.data[timesteps])
+
+    out1 = xr.Dataset(
+        {variable_name: (["time", "depth", "lat", "lon"], interpolated3d)},
+        coords={
+            "time": out_time,
+            "depth": realdepths,
+            "lon": (["lon"], x),
+            "lat": (["lat"], y),
+            "longitude": (["lat", "lon"], lon),
+            "latitude": (["lat", "lon"], lat),
+        },
+        attrs=data.attrs,
+    )
+    # if args.rotate:
+    #     out2 = xr.Dataset(
+    #         {variable_name2: (["time", "depth", "lat", "lon"], interpolated3d2)},
+    #         coords={
+    #             "time": out_time,
+    #             "depth": realdepths,
+    #             "lon": (["lon"], x),
+    #             "lat": (["lat"], y),
+    #             "longitude": (["lat", "lon"], lon),
+    #             "latitude": (["lat", "lon"], lat),
+    #         },
+    #         attrs=data2.attrs,
+    #     )
+
+    # out1.to_netcdf(out_path, encoding={variable_name: {"zlib": True, "complevel": 9}})
+    out1.to_netcdf(
+        out_path,
+        encoding={
+            "time": {"dtype": np.dtype("double")},
+            "depth": {"dtype": np.dtype("double")},
+            "lat": {"dtype": np.dtype("double")},
+            "lon": {"dtype": np.dtype("double")},
+            "longitude": {"dtype": np.dtype("double")},
+            "latitude": {"dtype": np.dtype("double")},
+            variable_name: {"zlib": True, "complevel": 1, "dtype": np.dtype("single")},
+        },
+    )
+    # if args.rotate:
+    #     out2.to_netcdf(
+    #         out_path2,
+    #         encoding={
+    #             "time": {"dtype": np.dtype("double")},
+    #             "depth": {"dtype": np.dtype("double")},
+    #             "lat": {"dtype": np.dtype("double")},
+    #             "lon": {"dtype": np.dtype("double")},
+    #             "longitude": {"dtype": np.dtype("double")},
+    #             "latitude": {"dtype": np.dtype("double")},
+    #             variable_name2: {
+    #                 "zlib": True,
+    #                 "complevel": 1,
+    #                 "dtype": np.dtype("single"),
+    #             },
+    #         },
+    #     )
+
+    print(out1)
+
+
+
 def fint(args=None):
     parser = argparse.ArgumentParser(
         prog="pfinterp", description="Interpolates FESOM2 data to regular grid."
@@ -347,6 +422,14 @@ def fint(args=None):
               Valid units are 'D' (days), 'h' (hours), 'm' (minutes), 's' (seconds). \
               To substract timedelta, put argument in quotes, and prepend ' -', so SPACE and then -, e.g. ' -10D'."
     )
+    parser.add_argument(
+        "--oneout",
+        action="store_true",
+        help="Add timedelta to the time axis. The format is number followed by unit. E.g. '1D' or '10h'. \
+              Valid units are 'D' (days), 'h' (hours), 'm' (minutes), 's' (seconds). \
+              To substract timedelta, put argument in quotes, and prepend ' -', so SPACE and then -, e.g. ' -10D'."
+    )
+
     args = parser.parse_args()
 
     # we will extract some arguments and will not pass just args to function,
@@ -463,9 +546,14 @@ def fint(args=None):
         distances, inds = create_indexes_and_distances(x2, y2, lon, lat, k=1, workers=4)
 
     # we will fill this array with interpolated values
-    interpolated3d = np.zeros((len(timesteps), len(realdepths), len(y), len(x)))
-    if args.rotate:
-        interpolated3d2 = np.zeros((len(timesteps), len(realdepths), len(y), len(x)))
+    if not args.oneout:
+        interpolated3d = np.zeros((len(timesteps), len(realdepths), len(y), len(x)))
+        if args.rotate:
+            interpolated3d2 = np.zeros((len(timesteps), len(realdepths), len(y), len(x)))
+    else:
+        interpolated3d = np.zeros((1, len(realdepths), len(y), len(x)))
+        if args.rotate:
+            interpolated3d2 = np.zeros((1, len(realdepths), len(y), len(x)))
 
     # main loop
     for t_index, ttime in enumerate(timesteps):
@@ -562,83 +650,30 @@ def fint(args=None):
                 if args.rotate:
                     interpolated2[m2] = np.nan
 
-            interpolated3d[t_index, d_index, :, :] = interpolated
+
+            if args.oneout:
+                interpolated3d[0, d_index, :, :] = interpolated 
+                if args.rotate:
+                    interpolated3d2[0, d_index, :, :] = interpolated2                 
+            else:
+                interpolated3d[t_index, d_index, :, :] = interpolated
+                if args.rotate:
+                    interpolated3d2[t_index, d_index, :, :] = interpolated2
+        
+        if args.oneout:
+            out_path_one = out_path.replace('.nc', f'_{str(t_index).zfill(10)}.nc')
+            save_data(data, args, [ttime], variable_name, interpolated3d, realdepths, x, y, lon, lat, out_path_one)
             if args.rotate:
-                interpolated3d2[t_index, d_index, :, :] = interpolated2
+                out_path_one2 = out_path2.replace('.nc', f'_{str(t_index).zfill(10)}.nc')
+                save_data(data, args, [ttime], variable_name, interpolated3d, realdepths, x, y, lon, lat, out_path_one2)        
 
     # save data (always 4D array)
+    if not args.oneout:
+        save_data(data, args, timesteps, variable_name, interpolated3d, realdepths, x, y, lon, lat, out_path)
+        if args.rotate:
+            save_data(data2, args, timesteps, variable_name2, interpolated3d2, realdepths, x, y, lon, lat, out_path2)
 
-    attributes = update_attrs(data.attrs, args)
-    if args.rotate:
-        attributes2 = update_attrs(data2.attrs, args)
-    data.attrs.update(attributes)
-    if args.rotate:
-        data2.attrs.update(attributes2)
-    if args.timedelta:
-        timedelta = parse_timedelta(args.timedelta)
-        shifted_time = data.time.data[timesteps] + timedelta
-        out_time = np.atleast_1d(shifted_time)
-    else:
-        out_time = np.atleast_1d(data.time.data[timesteps])
 
-    out1 = xr.Dataset(
-        {variable_name: (["time", "depth", "lat", "lon"], interpolated3d)},
-        coords={
-            "time": out_time,
-            "depth": realdepths,
-            "lon": (["lon"], x),
-            "lat": (["lat"], y),
-            "longitude": (["lat", "lon"], lon),
-            "latitude": (["lat", "lon"], lat),
-        },
-        attrs=data.attrs,
-    )
-    if args.rotate:
-        out2 = xr.Dataset(
-            {variable_name2: (["time", "depth", "lat", "lon"], interpolated3d2)},
-            coords={
-                "time": out_time,
-                "depth": realdepths,
-                "lon": (["lon"], x),
-                "lat": (["lat"], y),
-                "longitude": (["lat", "lon"], lon),
-                "latitude": (["lat", "lon"], lat),
-            },
-            attrs=data2.attrs,
-        )
-
-    # out1.to_netcdf(out_path, encoding={variable_name: {"zlib": True, "complevel": 9}})
-    out1.to_netcdf(
-        out_path,
-        encoding={
-            "time": {"dtype": np.dtype("double")},
-            "depth": {"dtype": np.dtype("double")},
-            "lat": {"dtype": np.dtype("double")},
-            "lon": {"dtype": np.dtype("double")},
-            "longitude": {"dtype": np.dtype("double")},
-            "latitude": {"dtype": np.dtype("double")},
-            variable_name: {"zlib": True, "complevel": 1, "dtype": np.dtype("single")},
-        },
-    )
-    if args.rotate:
-        out2.to_netcdf(
-            out_path2,
-            encoding={
-                "time": {"dtype": np.dtype("double")},
-                "depth": {"dtype": np.dtype("double")},
-                "lat": {"dtype": np.dtype("double")},
-                "lon": {"dtype": np.dtype("double")},
-                "longitude": {"dtype": np.dtype("double")},
-                "latitude": {"dtype": np.dtype("double")},
-                variable_name2: {
-                    "zlib": True,
-                    "complevel": 1,
-                    "dtype": np.dtype("single"),
-                },
-            },
-        )
-
-    print(out1)
 
 
 if __name__ == "__main__":
