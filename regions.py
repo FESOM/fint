@@ -142,6 +142,8 @@ def region_cartopy(box, res, projection="mer"):
         projection_ccrs = ccrs.Mercator()
     elif projection == "np":
         projection_ccrs = ccrs.NorthPolarStereo()
+    elif projection == "sp":
+        projection_ccrs = ccrs.SouthPolarStereo()
 
     if not res is None:
         lonNumber, latNumber = res
