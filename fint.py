@@ -665,7 +665,7 @@ def fint(args=None):
             save_data(data, args, [ttime], variable_name, interpolated3d, realdepths, x, y, lon, lat, out_path_one)
             if args.rotate:
                 out_path_one2 = out_path2.replace('.nc', f'_{str(t_index).zfill(10)}.nc')
-                save_data(data, args, [ttime], variable_name, interpolated3d, realdepths, x, y, lon, lat, out_path_one2)        
+                save_data(data2, args, [ttime], variable_name2, interpolated3d2, realdepths, x, y, lon, lat, out_path_one2)        
 
     # save data (always 4D array)
     if not args.oneout:
