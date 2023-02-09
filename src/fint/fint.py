@@ -10,9 +10,9 @@ import matplotlib.tri as mtri
 import pandas as pd
 from scipy.spatial import cKDTree
 import argparse
-from regions import define_region, define_region_from_file, mask_ne
+from .regions import define_region, define_region_from_file, mask_ne
 import os
-from ut import (
+from .ut import (
     update_attrs,
     nodes_or_ements,
     compute_face_coords,
