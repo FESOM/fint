@@ -9,8 +9,7 @@ except ImportError:
     print(
         "Cartopy is not installed, interpolation to projected regions is not available."
     )
-from matplotlib.offsetbox import (AnnotationBbox, DrawingArea, OffsetImage,
-                                  TextArea)
+from matplotlib.offsetbox import AnnotationBbox, DrawingArea, OffsetImage, TextArea
 
 try:
     import shapely.vectorized

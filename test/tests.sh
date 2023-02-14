@@ -38,40 +38,40 @@ python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b gulf --interp mtri_linear
 
 # create mask
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp mtri_linear -o mask.nc
-python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp mtri_linear --mask mask.nc 
-python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp nn --mask mask.nc 
-python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 500:3000  --interp nn --mask mask.nc 
+python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp mtri_linear --mask mask.nc
+python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp nn --mask mask.nc
+python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 500:3000  --interp nn --mask mask.nc
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp nn --no_mask_zero
 
 # interpolate to target grid
-python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 500:3000  --interp nn --target mask.nc 
+python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 500:3000  --interp nn --target mask.nc
 
 # Don't apply shapely mask
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 500:3000  --interp nn --target mask.nc --no_shape_mask
 
 # Different variables
 FILE="./test/data/u.fesom.1948.nc"
-python fint.py ${FILE} ${MESH} ${INFL} -t 0:3 -d -1  
+python fint.py ${FILE} ${MESH} ${INFL} -t 0:3 -d -1
 # --rotate will rotate vector output and produce 2 files
 python fint.py ${FILE} ${MESH} ${INFL} -t 0:3 -d 0:1000 --rotate
 
 # 2d nodes
 FILE="./test/data/ssh.fesom.1948.nc"
-python fint.py ${FILE} ${MESH} ${INFL} -t 0:3 -d 100:200  
+python fint.py ${FILE} ${MESH} ${INFL} -t 0:3 -d 100:200
 
 # 3d elements, on interfaces
 FILE="./test/data/Av.fesom.1948.nc"
-python fint.py ${FILE} ${MESH} ${INFL} -t 0:3 -d -1  
+python fint.py ${FILE} ${MESH} ${INFL} -t 0:3 -d -1
 python fint.py ${FILE} ${MESH} ${INFL} -t 0:3 -d -1  --interp linear_scipy
 
 # 3d nodes, on interfaces
 FILE="./test/data/Kv.fesom.1948.nc"
-python fint.py ${FILE} ${MESH} ${INFL} -t 0:3 -d -1  
+python fint.py ${FILE} ${MESH} ${INFL} -t 0:3 -d -1
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp mtri_linear
 
 # 2d elements
 FILE="./test/data/tx_sur.fesom.1948.nc"
-python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 0:20   
+python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 0:20
 python fint.py ${FILE} ${MESH} ${INFL} -t 0 -d 0:20 --rotate
 
 # timedelta

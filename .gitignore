@@ -1,3 +1,8 @@
+# Test files:
+test_fint.tar
+test/data
+test/mesh
+
 # Mac finder files
 .DS_Store
 # Direnv stuff
@@ -113,4 +118,3 @@ ENV/
 
 # IDE settings
 .vscode/
-
