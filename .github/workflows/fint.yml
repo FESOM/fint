@@ -23,6 +23,7 @@ jobs:
         run: |
           ./test/tests.sh
   containerize:
+    needs: fint_test
     runs-on: ubuntu-latest
     permissions:
       contents: read
