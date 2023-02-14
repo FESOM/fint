@@ -121,3 +121,56 @@ optional arguments:
                         (seconds). To substract timedelta, put argument in quotes, and prepend ' -', so
                         SPACE and then -, e.g. ' -10D'.
 ```
+# Containerized Usage
+
+ You can also use this from the provided Docker container with both `docker`
+ and `singularity`. Here's a usage example for Docker:
+
+ ```console
+$  docker run --rm -v "$(pwd):/app" ghcr.io/pgierz/fint:latest ./test/data/temp.fesom.1948.nc ./test/mesh/pi --ofile testing_new.nc
+/opt/conda/lib/python3.9/site-packages/cartopy/io/__init__.py:241: DownloadWarning: Downloading: https://naturalearth.s3.amazonaws.com/50m_physical/ne_50m_ocean.zip
+timesteps -1
+time: 0, depth:2.5
+time: 1, depth:2.5
+time: 2, depth:2.5
+time: 3, depth:2.5
+time: 4, depth:2.5
+time: 5, depth:2.5
+time: 6, depth:2.5
+time: 7, depth:2.5
+time: 8, depth:2.5
+time: 9, depth:2.5
+time: 10, depth:2.5
+time: 11, depth:2.5
+<xarray.Dataset>
+Dimensions:    (time: 12, depth: 1, lat: 170, lon: 360)
+Coordinates:
+  * time       (time) datetime64[ns] 1948-01-31T23:45:00 ... 1948-12-30T23:45:00
+  * depth      (depth) float64 2.5
+  * lon        (lon) float64 -180.0 -179.0 -178.0 -177.0 ... 178.0 179.0 180.0
+  * lat        (lat) float64 -80.0 -78.99 -77.99 -76.98 ... 87.99 88.99 90.0
+    longitude  (lat, lon) float64 -180.0 -179.0 -178.0 ... 178.0 179.0 180.0
+    latitude   (lat, lon) float64 -80.0 -80.0 -80.0 -80.0 ... 90.0 90.0 90.0
+Data variables:
+    temp       (time, depth, lat, lon) float64 nan nan nan ... nan nan -1.527
+Attributes: (12/22)
+    FESOM_model:                         FESOM2
+    FESOM_website:                       fesom.de
+    FESOM_git_SHA:                       8d28c8f
+    FESOM_MeshPath:                      /home/ollie/nkolduno/pi/fesom2/test/...
+    FESOM_mesh_representative_checksum:
+    FESOM_ClimateDataPath:               /home/ollie/nkolduno/pi/fesom2/test/...
+    ...                                  ...
+    FESOM_autorotate_back_to_geo:        -1
+    box:                                 -180.0, 180.0, -80.0, 90.0
+    influence:                           80000
+    interp:                              nn
+    data:                                /app/test/data/temp.fesom.1948.nc
+    meshpath:                            /app/test/mesh/pi
+ ```
+
+And for singularity:
+```console
+$ singularity run -B $(pwd):/app docker://ghcr.io/pgierz/fint:latest ./test/data/temp.fesom.1948.nc ./test/mesh/pi
+$ ncdump -h out.nc
+```
