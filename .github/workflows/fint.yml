@@ -1,9 +1,6 @@
 name: fint shell test
 
-# Controls when the action will run. Triggers the workflow on push or pull request. 
-
 on: [push]
-
 
 jobs:
   fint_test:
@@ -12,10 +9,36 @@ jobs:
         shell: bash -l {0}
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: provision-with-micromamba
-      uses: mamba-org/provision-with-micromamba@v11
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Run tests
-      run: |
-        ./tests.sh
+      - name: Provision with Micromamba
+        uses: mamba-org/provision-with-micromamba@v11
+
+      - name: Install Project
+        run: |
+          pip install .
+
+      - name: Run tests
+        run: |
+          ./test/tests.sh
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository }}:latest
