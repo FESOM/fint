@@ -5,4 +5,4 @@ RUN micromamba install -y -n base -f environment.yml && \
   micromamba clean --all --yes
 ARG MAMBA_DOCKERFILE_ACTIVATE=1
 RUN pip install .
-ENTRYPOINT ["/usr/local/bin/_entrypoint.sh", "./entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/_entrypoint.sh", "/app/entrypoint.sh"]
