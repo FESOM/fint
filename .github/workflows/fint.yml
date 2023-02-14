@@ -1,12 +1,6 @@
 name: fint shell test
 
-on:
-  push:
-    branches: [$default-branch]
-    # Publish semver tags as releases.
-    tags: ["v*.*.*"]
-  pull_request:
-    branches: [$default-branch]
+on: [push]
 
 jobs:
   fint_test:
