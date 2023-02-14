@@ -173,4 +173,54 @@ For singularity, the command is a little bit more complicated:
 ```console
 $ singularity run --pwd /app -B $(pwd):/app -w docker://ghcr.io/fesom/fint:main ./test/data/temp.fesom.1948.nc ./test/mesh/pi -o out.nc
 $ ncdump -h out.nc
+
+netcdf out {
+dimensions:
+	time = 12 ;
+	depth = 1 ;
+	lat = 170 ;
+	lon = 360 ;
+variables:
+	float temp(time, depth, lat, lon) ;
+		temp:_FillValue = NaNf ;
+		temp:coordinates = "latitude longitude" ;
+	double time(time) ;
+		time:_FillValue = NaN ;
+		time:units = "days since 1948-01-31 23:45:00" ;
+		time:calendar = "proleptic_gregorian" ;
+	double depth(depth) ;
+		depth:_FillValue = NaN ;
+	double lon(lon) ;
+		lon:_FillValue = NaN ;
+	double lat(lat) ;
+		lat:_FillValue = NaN ;
+	double longitude(lat, lon) ;
+		longitude:_FillValue = NaN ;
+	double latitude(lat, lon) ;
+		latitude:_FillValue = NaN ;
+
+// global attributes:
+		:FESOM_model = "FESOM2" ;
+		:FESOM_website = "fesom.de" ;
+		:FESOM_git_SHA = "8d28c8f" ;
+		:FESOM_MeshPath = "/home/ollie/nkolduno/pi/fesom2/test/meshes/pi/" ;
+		:FESOM_mesh_representative_checksum = "" ;
+		:FESOM_ClimateDataPath = "/home/ollie/nkolduno/pi/fesom2/test/input/global/" ;
+		:FESOM_which_ALE = "zstar" ;
+		:FESOM_mix_scheme = "KPP" ;
+		:FESOM_use_partial_cell = -1 ;
+		:FESOM_force_rotation = -1 ;
+		:FESOM_include_fleapyear = 0 ;
+		:FESOM_use_floatice = 0 ;
+		:FESOM_whichEVP = 1 ;
+		:FESOM_evp_rheol_steps = 120 ;
+		:FESOM_opt_visc = 5 ;
+		:FESOM_use_wsplit = -1 ;
+		:FESOM_autorotate_back_to_geo = -1 ;
+		:box = "-180.0, 180.0, -80.0, 90.0" ;
+		:influence = 80000LL ;
+		:interp = "nn" ;
+		:data = "/app/test/data/temp.fesom.1948.nc" ;
+		:meshpath = "/app/test/mesh/pi" ;
+}
 ```
