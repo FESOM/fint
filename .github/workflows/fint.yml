@@ -15,9 +15,9 @@ jobs:
       - name: Provision with Micromamba
         uses: mamba-org/provision-with-micromamba@v11
 
-      # - name: Run tests
-      #   run: |
-      #     ./test/tests.sh
+      - name: Run tests
+        run: |
+          ./test/tests.sh
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
