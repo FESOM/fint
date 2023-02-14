@@ -10,5 +10,6 @@ dependencies:
   - scipy
   - matplotlib
   - pandas
+  - pip
   - cartopy
   - shapely
