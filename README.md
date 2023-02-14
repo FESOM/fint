@@ -169,8 +169,8 @@ Attributes: (12/22)
     meshpath:                            /app/test/mesh/pi
  ```
 
-And for singularity:
+For singularity, the command is a little bit more complicated:
 ```console
-$ singularity run -B $(pwd):/app docker://ghcr.io/fesom/fint:latest ./test/data/temp.fesom.1948.nc ./test/mesh/pi
+$ singularity run --pwd /app -B $(pwd):/app -w docker://ghcr.io/fesom/fint:main ./test/data/temp.fesom.1948.nc ./test/mesh/pi -o out.nc
 $ ncdump -h out.nc
 ```
