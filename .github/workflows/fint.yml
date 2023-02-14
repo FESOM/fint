@@ -15,6 +15,10 @@ jobs:
       - name: Provision with Micromamba
         uses: mamba-org/provision-with-micromamba@v11
 
+      - name: Install Project
+        run: |
+          pip install .
+
       - name: Run tests
         run: |
           ./test/tests.sh
