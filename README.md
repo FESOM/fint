@@ -127,7 +127,7 @@ optional arguments:
  and `singularity`. Here's a usage example for Docker:
 
  ```console
-$  docker run --rm -v "$(pwd):/app" ghcr.io/pgierz/fint:latest ./test/data/temp.fesom.1948.nc ./test/mesh/pi --ofile testing_new.nc
+$  docker run --rm -v "$(pwd):/app" ghcr.io/fesom/fint:latest ./test/data/temp.fesom.1948.nc ./test/mesh/pi --ofile testing_new.nc
 /opt/conda/lib/python3.9/site-packages/cartopy/io/__init__.py:241: DownloadWarning: Downloading: https://naturalearth.s3.amazonaws.com/50m_physical/ne_50m_ocean.zip
 timesteps -1
 time: 0, depth:2.5
@@ -171,6 +171,6 @@ Attributes: (12/22)
 
 And for singularity:
 ```console
-$ singularity run -B $(pwd):/app docker://ghcr.io/pgierz/fint:latest ./test/data/temp.fesom.1948.nc ./test/mesh/pi
+$ singularity run -B $(pwd):/app docker://ghcr.io/fesom/fint:latest ./test/data/temp.fesom.1948.nc ./test/mesh/pi
 $ ncdump -h out.nc
 ```
