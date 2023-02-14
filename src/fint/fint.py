@@ -1,24 +1,18 @@
-from platform import node
-import xarray as xr
-import numpy as np
-from scipy.interpolate import (
-    CloughTocher2DInterpolator,
-    LinearNDInterpolator,
-    NearestNDInterpolator,
-)
-import matplotlib.tri as mtri
-import pandas as pd
-from scipy.spatial import cKDTree
 import argparse
-from .regions import define_region, define_region_from_file, mask_ne
 import os
-from .ut import (
-    update_attrs,
-    nodes_or_ements,
-    compute_face_coords,
-    get_company_name,
-    get_data_2d,
-)
+from platform import node
+
+import matplotlib.tri as mtri
+import numpy as np
+import pandas as pd
+import xarray as xr
+from scipy.interpolate import (CloughTocher2DInterpolator,
+                               LinearNDInterpolator, NearestNDInterpolator)
+from scipy.spatial import cKDTree
+
+from .regions import define_region, define_region_from_file, mask_ne
+from .ut import (compute_face_coords, get_company_name, get_data_2d,
+                 nodes_or_ements, update_attrs)
 
 
 def lon_lat_to_cartesian(lon, lat, R=6371000):
@@ -217,6 +211,7 @@ def parse_timesteps(timesteps, time_shape):
     print("timesteps {}".format(timesteps))
     return timesteps
 
+
 def parse_timedelta(timedelta_arg):
     timedelta_val = timedelta_arg[:-1]
     timedelta_unit = timedelta_arg[-1:]
@@ -224,7 +219,20 @@ def parse_timedelta(timedelta_arg):
 
     return timedelta
 
-def save_data(data, args, timesteps, variable_name, interpolated3d, realdepths, x, y, lon, lat, out_path):
+
+def save_data(
+    data,
+    args,
+    timesteps,
+    variable_name,
+    interpolated3d,
+    realdepths,
+    x,
+    y,
+    lon,
+    lat,
+    out_path,
+):
     attributes = update_attrs(data.attrs, args)
     # if args.rotate:
     #     attributes2 = update_attrs(data2.attrs, args)
@@ -296,7 +304,6 @@ def save_data(data, args, timesteps, variable_name, interpolated3d, realdepths, 
     #     )
 
     print(out1)
-
 
 
 def fint(args=None):
@@ -420,14 +427,14 @@ def fint(args=None):
         type=str,
         help="Add timedelta to the time axis. The format is number followed by unit. E.g. '1D' or '10h'. \
               Valid units are 'D' (days), 'h' (hours), 'm' (minutes), 's' (seconds). \
-              To substract timedelta, put argument in quotes, and prepend ' -', so SPACE and then -, e.g. ' -10D'."
+              To substract timedelta, put argument in quotes, and prepend ' -', so SPACE and then -, e.g. ' -10D'.",
     )
     parser.add_argument(
         "--oneout",
         action="store_true",
         help="Add timedelta to the time axis. The format is number followed by unit. E.g. '1D' or '10h'. \
               Valid units are 'D' (days), 'h' (hours), 'm' (minutes), 's' (seconds). \
-              To substract timedelta, put argument in quotes, and prepend ' -', so SPACE and then -, e.g. ' -10D'."
+              To substract timedelta, put argument in quotes, and prepend ' -', so SPACE and then -, e.g. ' -10D'.",
     )
 
     args = parser.parse_args()
@@ -549,7 +556,9 @@ def fint(args=None):
     if not args.oneout:
         interpolated3d = np.zeros((len(timesteps), len(realdepths), len(y), len(x)))
         if args.rotate:
-            interpolated3d2 = np.zeros((len(timesteps), len(realdepths), len(y), len(x)))
+            interpolated3d2 = np.zeros(
+                (len(timesteps), len(realdepths), len(y), len(x))
+            )
     else:
         interpolated3d = np.zeros((1, len(realdepths), len(y), len(x)))
         if args.rotate:
@@ -650,30 +659,77 @@ def fint(args=None):
                 if args.rotate:
                     interpolated2[m2] = np.nan
 
-
             if args.oneout:
-                interpolated3d[0, d_index, :, :] = interpolated 
+                interpolated3d[0, d_index, :, :] = interpolated
                 if args.rotate:
-                    interpolated3d2[0, d_index, :, :] = interpolated2                 
+                    interpolated3d2[0, d_index, :, :] = interpolated2
             else:
                 interpolated3d[t_index, d_index, :, :] = interpolated
                 if args.rotate:
                     interpolated3d2[t_index, d_index, :, :] = interpolated2
-        
+
         if args.oneout:
-            out_path_one = out_path.replace('.nc', f'_{str(t_index).zfill(10)}.nc')
-            save_data(data, args, [ttime], variable_name, interpolated3d, realdepths, x, y, lon, lat, out_path_one)
+            out_path_one = out_path.replace(".nc", f"_{str(t_index).zfill(10)}.nc")
+            save_data(
+                data,
+                args,
+                [ttime],
+                variable_name,
+                interpolated3d,
+                realdepths,
+                x,
+                y,
+                lon,
+                lat,
+                out_path_one,
+            )
             if args.rotate:
-                out_path_one2 = out_path2.replace('.nc', f'_{str(t_index).zfill(10)}.nc')
-                save_data(data2, args, [ttime], variable_name2, interpolated3d2, realdepths, x, y, lon, lat, out_path_one2)        
+                out_path_one2 = out_path2.replace(
+                    ".nc", f"_{str(t_index).zfill(10)}.nc"
+                )
+                save_data(
+                    data2,
+                    args,
+                    [ttime],
+                    variable_name2,
+                    interpolated3d2,
+                    realdepths,
+                    x,
+                    y,
+                    lon,
+                    lat,
+                    out_path_one2,
+                )
 
     # save data (always 4D array)
     if not args.oneout:
-        save_data(data, args, timesteps, variable_name, interpolated3d, realdepths, x, y, lon, lat, out_path)
+        save_data(
+            data,
+            args,
+            timesteps,
+            variable_name,
+            interpolated3d,
+            realdepths,
+            x,
+            y,
+            lon,
+            lat,
+            out_path,
+        )
         if args.rotate:
-            save_data(data2, args, timesteps, variable_name2, interpolated3d2, realdepths, x, y, lon, lat, out_path2)
-
-
+            save_data(
+                data2,
+                args,
+                timesteps,
+                variable_name2,
+                interpolated3d2,
+                realdepths,
+                x,
+                y,
+                lon,
+                lat,
+                out_path2,
+            )
 
 
 if __name__ == "__main__":

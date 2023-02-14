@@ -1,6 +1,6 @@
-import xarray as xr
-import numpy as np
 import matplotlib.pylab as plt
+import numpy as np
+import xarray as xr
 
 try:
     import cartopy.crs as ccrs
@@ -9,7 +9,8 @@ except ImportError:
     print(
         "Cartopy is not installed, interpolation to projected regions is not available."
     )
-from matplotlib.offsetbox import TextArea, DrawingArea, OffsetImage, AnnotationBbox
+from matplotlib.offsetbox import (AnnotationBbox, DrawingArea, OffsetImage,
+                                  TextArea)
 
 try:
     import shapely.vectorized
