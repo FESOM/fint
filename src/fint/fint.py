@@ -482,7 +482,10 @@ def fint(args=None):
 
     # if data have depth, parse depths
     if ("nz1" in data.dims) or ("nz" in data.dims):
-        depth_coord = dim_names[0]
+        if "nz1" in data.dims:
+            depth_coord = "nz1"
+        else:
+            depth_coord = "nz"
         depths_from_file = data[depth_coord].values
         dinds, realdepths = parse_depths(args.depths, depths_from_file)
         if (data[variable_name].dims[1] == "nz") or (
