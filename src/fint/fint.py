@@ -122,11 +122,7 @@ def get_no_cyclic(x2, elem):
 
 def interpolate_kdtree2d(
     data_in,
-    x2,
-    y2,
-    elem,
     lons,
-    lats,
     distances,
     inds,
     radius_of_influence=100000,
