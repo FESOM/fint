@@ -34,12 +34,16 @@ def lon_lat_to_cartesian(lon, lat, R=6371000):
         R (float, optional): The radius of the sphere. Defaults to 6371000 meters.
 
     Returns:
-        float: The x-coordinate.
-        float: The y-coordinate.
-        float: The z-coordinate.
+        tuple containing
+
+        - x (float): The x-coordinate.
+        - y (float): The y-coordinate.
+        - z (float): The z-coordinate.
+
     References:
         - [Interpolation Between Grids with CKDTree](http://earthpy.org/interpolation_between_grids_with_ckdtree.html)
     """
+
 
     lon_r = np.radians(lon)
     lat_r = np.radians(lat)
@@ -64,9 +68,11 @@ def create_indexes_and_distances(model_lon, model_lat, lons, lats, k=1, workers=
         workers (int, optional): Number of jobs to schedule for parallel processing. If -1 is given,
             all processors are used. Defaults to 2.
 
-    Returns:
-        np.ndarray: The distances to the nearest neighbors 
-        np.ndarray: The locations of the neighbors in the data
+    Returns:        
+        tuple containing
+
+        - The distances to the nearest neighbors  (np.ndarray) 
+        - The locations of the neighbors in the data (np.ndarray) 
     """
 
     xs, ys, zs = lon_lat_to_cartesian(model_lon, model_lat)
@@ -99,14 +105,17 @@ def ind_for_depth(depth, depths_from_file):
 
 def load_mesh(mesh_path):
     """
-        Loads the mesh data from the specified path and returns the node coordinates and element connectivity.
+    Loads the mesh data from the specified path and returns the node coordinates and element connectivity.
+    
     Args:
         mesh_path (str): The path to the directory containing the model output.
 
     Returns:
-        - np.ndarray: The x-coordinates (x2) of the mesh nodes.
-        - np.ndarray: The y-coordinates (y2) of the mesh nodes.
-        - np.ndarray: The element connectivity (elem) array.
+        tuple containing
+
+        - x2 (np.ndarray): The x-coordinates of the mesh nodes.
+        - y2 (np.ndarray): The y-coordinates of the mesh nodes.
+        - elem (np.ndarray): The element connectivity array.
 
     """
     nodes = pd.read_csv(
@@ -264,8 +273,10 @@ def parse_depths(depths, depths_from_file):
         depths_from_file (np.ndarray): The array of available depth values.
 
     Returns:
-        -List[int]: The depth indices
-        -List[int]: The depth values based on the input.
+        tuple containing
+
+        -The depth indices (List[int])
+        -The depth values based on the input (List[int]) 
 
     """
     depth_type = "list"

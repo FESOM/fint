@@ -58,8 +58,10 @@ def compute_face_coords(x2, y2, elem):
         elem (numpy array): Element indices.
 
     Returns:
-        - numpy array: face_x, representing the computed x coordinates of the elements
-        - numpy array: face_y, representing the computed y coordinates of the elements
+        tuple containing
+
+        - face_x (numpy array): representing the computed x coordinates of the elements
+        - face_y (numpy array): representing the computed y coordinates of the elements
     """
     first_mean = x2[elem].mean(axis=1)
     j = np.where(np.abs(x2[elem][:, 0] - first_mean) > 100)[0]
@@ -120,8 +122,10 @@ def scalar_g2r(al, be, ga, lon, lat):
         lat (array): 1D array of latitudes in geographical coordinates.
 
     Returns:
-        - array: 1D array of longitudes in rotated coordinates.
-        - array: 1D array of latitudes in rotated coordinates.
+        tuple containing
+
+        - lon (array): 1D array of longitudes in rotated coordinates.
+        - lat (array): 1D array of latitudes in rotated coordinates.
     """
 
     rad = np.pi / 180
@@ -186,8 +190,10 @@ def scalar_r2g(al, be, ga, rlon, rlat):
         rlat (array): 1D array of latitudes in rotated coordinates.
 
     Returns:
-        - array: 1D array of longitudes in geographical coordinates.
-        - array: 1D array of latitudes in geographical coordinates.
+        tuple containing
+
+        - lon (array): 1D array of longitudes in geographical coordinates.
+        - lat (array): 1D array of latitudes in geographical coordinates.
     """
 
     rad = np.pi / 180
@@ -255,8 +261,10 @@ def vec_rotate_r2g(al, be, ga, lon, lat, urot, vrot, flag):
             - flag = 0: lon and lat are in rotated coordinates.
 
     Returns:
-        - array: 1D array of u component of the vector in geographical coordinates.
-        - array: 1D array of v component of the vector in geographical coordinates.
+        tuple containing
+
+        - u (array): 1D array of u component of the vector in geographical coordinates.
+        - v (array): 1D array of v component of the vector in geographical coordinates.
     """
 
     #   first get another coordinate
@@ -346,8 +354,8 @@ def get_data_2d(datas, variable_names, ttime, dind, dimension_order, rotate, x2,
         y2 (array): 1D array of y coordinates.
 
     Returns:
-        ndarray or tuple: If `datas` contains only one dataset, returns a 2D numpy array of the data.
-                         If `datas` contains two datasets, returns a tuple of two 2D numpy arrays.
+        If `datas` contains only one dataset, returns a 2D numpy array of the data.
+        If `datas` contains two datasets, returns a tuple of two 2D numpy arrays.
     """
 
     if len(datas[0].dims) == 2:

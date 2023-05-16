@@ -76,10 +76,12 @@ def define_region(box, res, projection=None):
                                If None, the coordinates will be in a regular lat/lon grid.
 
     Returns:
-        - ndarray: 1D array of x coordinates.
-        - ndarray: 1D array of y coordinates.
-        - ndarray: 2D array of longitude values.
-        - ndarray: 2D array of latitude values.
+        tuple containing
+
+        - x (ndarray): 1D array of coordinates.
+        - y (ndarray): 1D array of coordinates.
+        - lon (ndarray): 2D array of longitude values.
+        - lat (ndarray): 2D array of latitude values.
 
     Raises:
         ValueError: If an unknown or unsupported region is specified.
@@ -122,10 +124,12 @@ def region_gs(res):
                      For example, res=(300, 250) would generate a grid with 300 longitude points and 250 latitude points.
 
     Returns:
-        - ndarray: 1D array of x coordinates.
-        - ndarray: 1D array of y coordinates.
-        - ndarray: 2D array of longitude values.
-        - ndarray: 2D array of latitude values.
+        tuple containing
+
+        - x (ndarray): 1D array of coordinates.
+        - y (ndarray): 1D array of coordinates.
+        - lon (ndarray): 2D array of longitude values.
+        - lat (ndarray): 2D array of latitude values.
     """
     if not res is None:
         lonNumber, latNumber = res
@@ -151,10 +155,12 @@ def region_trop(res):
                      For example, res=(751, 400) would generate a grid with 751 longitude points and 400 latitude points.
 
     Returns:
-        - ndarray: 1D array of x coordinates.
-        - ndarray: 1D array of y coordinates.
-        - ndarray: 2D array of longitude values.
-        - ndarray: 2D array of latitude values.
+        tuple containing
+
+        - x (ndarray): 1D array of coordinates.
+        - y (ndarray): 1D array of coordinates.
+        - lon (ndarray): 2D array of longitude values.
+        - lat (ndarray): 2D array of latitude values.
     """
     if not res is None:
         lonNumber, latNumber = res
@@ -180,10 +186,12 @@ def region_arctic(res):
                      For example, res=(500, 500) would generate a grid with 500 longitude points and 500 latitude points.
 
     Returns:
-        - ndarray: 1D array of x coordinates.
-        - ndarray: 1D array of y coordinates.
-        - ndarray: 2D array of longitude values.
-        - ndarray: 2D array of latitude values.
+        tuple containing
+
+        - x (ndarray): 1D array of coordinates.
+        - y (ndarray): 1D array of coordinates.
+        - lon (ndarray): 2D array of longitude values.
+        - lat (ndarray): 2D array of latitude values.
     Note:
         - The generated coordinates cover the Arctic region, spanning from -180° to 180° longitude and from 60° to 90° latitude.
         - The projection used is the NorthPolarStereo projection
@@ -212,10 +220,12 @@ def region_gulf(res):
                      For example, res=(1000, 500) would generate a grid with 1000 longitude points and 500 latitude points.
 
     Returns:
-        - ndarray: 1D array of x coordinates.
-        - ndarray: 1D array of y coordinates.
-        - ndarray: 2D array of longitude values.
-        - ndarray: 2D array of latitude values.
+        tuple containing
+
+        - x (ndarray): 1D array of coordinates.
+        - y (ndarray): 1D array of coordinates.
+        - lon (ndarray): 2D array of longitude values.
+        - lat (ndarray): 2D array of latitude values.
 
     Note:
         - The generated coordinates cover the Gulf region, spanning from -80° to -30° longitude and from 20° to 60° latitude.
@@ -252,10 +262,12 @@ def region_cartopy(box, res, projection="mer"):
                                     Default is "mer" (Mercator).
 
     Returns:
-        - ndarray: 1D array of x coordinates.
-        - ndarray: 1D array of y coordinates.
-        - ndarray: 2D array of longitude values.
-        - ndarray: 2D array of latitude values.
+        tuple containing
+
+        - x (ndarray): 1D array of coordinates.
+        - y (ndarray): 1D array of coordinates.
+        - lon (ndarray): 2D array of longitude values.
+        - lat (ndarray): 2D array of latitude values.
     """
     if projection == "mer":
         projection_ccrs = ccrs.Mercator()
@@ -322,7 +334,7 @@ def mask_ne(lonreg2, latreg2):
         latreg2 (np.array): 2D array of latitudes.
 
     Returns:
-        np.array: m2, 2D mask with True where the ocean is.
+        m2 (np.array): 2D mask with True where the ocean is.
     """
     nearth = cfeature.NaturalEarthFeature("physical", "ocean", "50m")
     main_geom = [contour for contour in nearth.geometries()][0]
