@@ -1,4 +1,4 @@
-fint module
+fint
 ===========
 
 .. automodule:: fint.fint

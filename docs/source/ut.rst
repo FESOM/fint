@@ -1,4 +1,4 @@
-ut module
+ut
 =========
 
 .. automodule:: fint.ut

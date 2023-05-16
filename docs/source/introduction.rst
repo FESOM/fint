@@ -1,5 +1,5 @@
-fint
-====
+Introduction
+============
 
 Easy interpolation of `fesom2 <https://github.com/FESOM/fesom2>`__
 output data. Your data should be created with ``refactoring`` brunch of
@@ -150,7 +150,7 @@ of the options with explination.
                            SPACE and then -, e.g. ' -10D'.
 
 Containerized Usage
-===================
+--------------------
 
 You can also use this from the provided Docker container with both
 ``docker`` and ``singularity``. Here’s a usage example for Docker:

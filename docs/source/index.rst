@@ -1,9 +1,11 @@
-Welcome to fint documentation!
+fint documentation
 =================================
-.. include:: README.rst
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-   modules
+   introduction
+   fint
+   regions
+   ut
