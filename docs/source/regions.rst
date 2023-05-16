@@ -1,4 +1,4 @@
-regions module
+regions
 ==============
 
 .. automodule:: fint.regions

@@ -9,7 +9,6 @@
 project = 'fint'
 copyright = '2023, Nikolay Koldunov'
 author = 'Nikolay Koldunov'
-release = '0.01'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
