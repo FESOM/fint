@@ -1,5 +1,5 @@
-Introduction
-============
+What is fint?
+----------------
 
 Easy interpolation of `fesom2 <https://github.com/FESOM/fesom2>`__
 output data. Your data should be created with ``refactoring`` brunch of
