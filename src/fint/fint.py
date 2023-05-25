@@ -209,7 +209,6 @@ def mask_triangulation(data_in, triang2, elem, no_cyclic_elem):
     data_in_on_elements = data_in[elem[no_cyclic_elem]].mean(axis=1)
     data_in_on_elements[data_in_on_elements == 0] = -999
     mask = data_in_on_elements == -999
-    data_in[data_in == 0] = np.nan
     triang2.set_mask(mask)
     return triang2
 
@@ -518,7 +517,7 @@ def fint(args=None):
         help="Several options are available:\
             - Map boundaries in -180 180 -90 90 format that will be used for interpolation.\
             - Use one of the predefined regions. Available: gs (Golf Stream), \
-                trop (Atlantic Tropics), arctic, gulf (also Golf Stream, but based on Mercator projection.)\))",
+                trop (Atlantic Tropics), arctic, gulf (also Golf Stream, but based on Mercator projection.)))",
     )
 
     parser.add_argument(
