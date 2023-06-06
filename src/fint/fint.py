@@ -6,6 +6,7 @@ import matplotlib.tri as mtri
 import numpy as np
 import pandas as pd
 import xarray as xr
+import subprocess
 from scipy.interpolate import (
     CloughTocher2DInterpolator,
     LinearNDInterpolator,
