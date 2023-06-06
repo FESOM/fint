@@ -3,7 +3,8 @@ set -o xtrace
 
 wget https://swift.dkrz.de/v1/dkrz_c719fbc3-98ea-446c-8e01-356dac22ed90/fint/test_fint.tar
 tar -xvf test_fint.tar
-
+wget -O ./test/mesh/pi/pi_griddes_elements_IFS.nc https://gitlab.awi.de/fesom/pi/-/raw/master/pi_griddes_elements_IFS.nc
+wget -O ./test/mesh/pi/pi_griddes_nodes_IFS.nc https://gitlab.awi.de/fesom/pi/-/raw/master/pi_griddes_nodes_IFS.nc
 export FILE="./test/data/temp.fesom.1948.nc"
 export MESH="./test/mesh/pi/"
 export INFL="--influence 500000"
@@ -35,6 +36,17 @@ fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b "-80, -60, 20, 40" --map_projection me
 fint ${FILE} ${MESH} ${INFL} -t 0 -d 0  --interp mtri_linear
 fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b "-150, 150, -50, 70" --interp mtri_linear
 fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b gulf --interp mtri_linear
+
+#cdo_remapcon
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 --interp cdo_remapcon
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b "-150, 150, -50, 70" --interp cdo_remapcon
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b gulf --interp cdo_remapcon
+
+#cdo_remaplaf
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 --interp cdo_remaplaf
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b "-150, 150, -50, 70" --interp cdo_remaplaf
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b arctic --interp cdo_remapcon
+
 
 # create mask
 fint ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp mtri_linear -o mask.nc

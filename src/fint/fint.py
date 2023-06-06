@@ -260,6 +260,38 @@ def interpolate_linear_scipy(data_in, x2, y2, lon2, lat2):
     return interpolated
 
 
+def interpolate_cdo(target_grid,gridfile,original_file,output_file,variable_name,interpolation):
+    """
+    Interpolate a variable in a file using CDO (Climate Data Operators).
+
+    Args:
+        target_grid (str): Path to the target grid file.
+        gridfile (str): Path to the grid file associated with the original file.
+        original_file (str): Path to the original file containing the variable to be interpolated.
+        output_file (str): Path to the output file where the interpolated variable will be saved.
+        variable_name (str): Name of the variable to be interpolated.
+        interpolation (str): Interpolation method to be used (cdo_remapcon or cdo_remaplaf).
+
+    Returns:
+        np.ndarray: Interpolated variable data as a NumPy array.
+    """
+
+    command = [
+        "cdo",
+        "-setctomiss,0",
+        f"-{interpolation.split('_')[1]},{target_grid}",
+        f"-setgrid,{gridfile}",
+        f"{original_file}",
+        f"{output_file}"
+    ]
+
+    # Execute the command
+    subprocess.run(command)
+
+    interpolated = xr.open_dataset(output_file)[variable_name].values
+    os.remove(output_file)
+    return interpolated
+
 def parse_depths(depths, depths_from_file):
     """
     Parses the selected depths from the available depth values and returns the corresponding depth indices and values.
@@ -545,7 +577,7 @@ def fint(args=None):
     )
     parser.add_argument(
         "--interp",
-        choices=["nn", "mtri_linear", "linear_scipy"],  # "idist", "linear", "cubic"],
+        choices=["nn", "mtri_linear", "linear_scipy", "cdo_remapcon","cdo_remaplaf"],  # "idist", "linear", "cubic"],
         default="nn",
         help="Interpolation method. Options are \
             nn - nearest neighbor (KDTree implementation, fast), \
@@ -727,6 +759,42 @@ def fint(args=None):
         trifinder = triang2.get_trifinder()
     elif interpolation == "nn":
         distances, inds = create_indexes_and_distances(x2, y2, lon, lat, k=1, workers=4)
+    elif interpolation == "cdo_remapcon" or interpolation == "cdo_remaplaf":
+        target_grid_data = xr.Dataset(
+                            coords={
+                                "lon": (["lon"], x),
+                                "lat": (["lat"], y),
+                                "longitude": (["lat", "lon"], lon),
+                                "latitude": (["lat", "lon"], lat),
+                            }
+                        )   
+        attributes_lat = {'standard_name': 'latitude',
+                        'long_name': 'latitude',
+                        'units': 'degrees_north',
+                        'axis': 'Y'}
+        attributes_lon = {'standard_name': 'longitude',
+                        'long_name': 'longitude',
+                        'units': 'degrees_east',
+                        'axis': 'X'}
+        target_grid_data['lat'].attrs = attributes_lat
+        target_grid_data['lon'].attrs = attributes_lon
+        target_grid_path = out_path.replace(".nc", "target_grid.nc")
+        target_grid_data.to_netcdf(target_grid_path,encoding={
+                            "lat": {"dtype": np.dtype("double")},
+                            "lon": {"dtype": np.dtype("double")},
+                            "longitude": {"dtype": np.dtype("double")},
+                            "latitude": {"dtype": np.dtype("double")},
+                        },
+                    )
+        
+        endswith = "_nodes_IFS.nc"
+        if placement == "elements":
+            endswith = "_elements_IFS.nc"
+        for root, dirs, files in os.walk(args.meshpath):
+            for file in files:
+                if file.endswith(endswith):
+                    gridfile = os.path.join(root, file)
+
 
     # we will fill this array with interpolated values
     if not args.oneout:
@@ -811,6 +879,27 @@ def fint(args=None):
                 interpolated = interpolate_linear_scipy(data_in, x2, y2, lon, lat)
                 if args.rotate:
                     interpolated2 = interpolate_linear_scipy(data_in2, x2, y2, lon, lat)
+            
+            elif interpolation == "cdo_remapcon" or interpolation == "cdo_remaplaf":
+                input_data = xr.Dataset(
+                                {variable_name: (["nod2"], data_in)},
+
+                            )
+                
+                output_file_path = out_path.replace(".nc", "output_cdo_file.nc")
+                input_file_path = args.data.replace(".nc","cdo_interpolation.nc")
+                input_data.to_netcdf(input_file_path,encoding={
+                            variable_name: {"dtype": np.dtype("double")},
+                        },
+                    )
+                interpolated = interpolate_cdo(target_grid_path,
+                                               gridfile,
+                                               input_file_path,
+                                               output_file_path,
+                                               variable_name,
+                                                interpolation
+                                                )
+                os.remove(input_file_path)
 
             # masking of the data
             if mask_file is not None:
@@ -865,6 +954,8 @@ def fint(args=None):
                     lat,
                     out_path_one2,
                 )
+    if interpolation == "cdo_remapcon" or interpolation == "cdo_remaplaf":               
+        os.remove(target_grid_path)
 
     # save data (always 4D array)
     if not args.oneout:
