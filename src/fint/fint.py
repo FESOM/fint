@@ -26,9 +26,26 @@ from .ut import (
 
 def lon_lat_to_cartesian(lon, lat, R=6371000):
     """
-    calculates lon, lat coordinates of a point on a sphere with
-    radius R. Taken from http://earthpy.org/interpolation_between_grids_with_ckdtree.html
+    Calculates Cartesian coordinates (x, y, z) from longitude and latitude coordinates
+    on a sphere with radius R.
+
+    Args:
+        lon (float): The longitude coordinate in degrees.
+        lat (float): The latitude coordinate in degrees.
+        R (float, optional): The radius of the sphere. Defaults to 6371000 meters.
+
+    Returns:
+        tuple containing
+
+        - x (float): The x-coordinate.
+        - y (float): The y-coordinate.
+        - z (float): The z-coordinate.
+
+    References:
+        - [Interpolation Between Grids with CKDTree](http://earthpy.org/interpolation_between_grids_with_ckdtree.html)
     """
+
+
     lon_r = np.radians(lon)
     lat_r = np.radians(lat)
 
@@ -40,26 +57,25 @@ def lon_lat_to_cartesian(lon, lat, R=6371000):
 
 def create_indexes_and_distances(model_lon, model_lat, lons, lats, k=1, workers=2):
     """
-    Creates KDTree object and query it for indexes of points in FESOM mesh that are close to the
-    points of the target grid. Also return distances of the original points to target points.
-    Parameters
-    ----------
-    mesh : fesom_mesh object
-        pyfesom mesh representation
-    lons/lats : array
-        2d arrays with target grid values.
-    k : int
-        k-th nearest neighbors to return.
-    n_jobs : int, optional
-        Number of jobs to schedule for parallel processing. If -1 is given
-        all processors are used. Default: 1.
-    Returns
-    -------
-    distances : array of floats
-        The distances to the nearest neighbors.
-    inds : ndarray of ints
-        The locations of the neighbors in data.
+    Creates a KDTree object and queries it for indexes of points in the FESOM mesh that are close to
+    the points of the target grid. Also returns distances of the original points to target points.
+
+    Parameters:
+        model_lon (float): The longitude of the model points.
+        model_lat (float): The latitude of the model points.
+        lons (np.ndarray): 2D array with target grid longitudes.
+        lats (np.ndarray): 2D array with target grid latitudes.
+        k (int, optional): The number of nearest neighbors to return. Defaults to 1.
+        workers (int, optional): Number of jobs to schedule for parallel processing. If -1 is given,
+            all processors are used. Defaults to 2.
+
+    Returns:        
+        tuple containing
+
+        - The distances to the nearest neighbors  (np.ndarray) 
+        - The locations of the neighbors in the data (np.ndarray) 
     """
+
     xs, ys, zs = lon_lat_to_cartesian(model_lon, model_lat)
     xt, yt, zt = lon_lat_to_cartesian(lons.flatten(), lats.flatten())
 
@@ -71,18 +87,17 @@ def create_indexes_and_distances(model_lon, model_lat, lons, lats, k=1, workers=
 
 def ind_for_depth(depth, depths_from_file):
     """
-    Find the model depth index that is closest to the required depth
-    Parameters
-    ----------
-    depth : float
-        desired depth.
-    mesh : object
-        FESOM mesh object
-    Returns
-    dind : int
-        index that corresponds to the model depth level closest to `depth`.
-    -------
+    Finds the model depth index that is closest to the required depth.
+
+    Parameters:
+        depth (float): The desired depth.
+        depths_from_file (List[float]): List of model depth levels.
+
+    Returns:
+        int: The index that corresponds to the model depth level closest to `depth`.
+
     """
+
     arr = [abs(abs(z) - abs(depth)) for z in depths_from_file]
     v, i = min((v, i) for (i, v) in enumerate(arr))
     dind = i
@@ -91,15 +106,18 @@ def ind_for_depth(depth, depths_from_file):
 
 def load_mesh(mesh_path):
     """
-    Load FESOM mesh from the given path.
-    Parameters
-    ----------
-    mesh_path : str
-        Path to the FESOM mesh.
-    Returns
-    -------
-    x2, y2, elem : arrays
-        Arrays with coordinates of nodes and elements.
+    Loads the mesh data from the specified path and returns the node coordinates and element connectivity.
+    
+    Args:
+        mesh_path (str): The path to the directory containing the model output.
+
+    Returns:
+        tuple containing
+
+        - x2 (np.ndarray): The x-coordinates of the mesh nodes.
+        - y2 (np.ndarray): The y-coordinates of the mesh nodes.
+        - elem (np.ndarray): The element connectivity array.
+
     """
 
     nodes = pd.read_csv(
@@ -127,7 +145,17 @@ def load_mesh(mesh_path):
 
 
 def get_no_cyclic(x2, elem):
-    """Compute non cyclic elements of the mesh."""
+    """
+    Computes the non-cyclic elements of the mesh.
+
+    Args:
+        x2 (np.ndarray): The x-coordinates of the mesh nodes.
+        elem (np.ndarray): The element connectivity array.
+
+    Returns:
+        np.ndarray: An array containing the indices of the non-cyclic elements.
+
+    """
     d = x2[elem].max(axis=1) - x2[elem].min(axis=1)
     no_cyclic_elem = np.argwhere(d < 100)
     return no_cyclic_elem.ravel()
@@ -135,42 +163,31 @@ def get_no_cyclic(x2, elem):
 
 def interpolate_kdtree2d(
     data_in,
-    x2,
-    y2,
-    elem,
     lons,
-    lats,
     distances,
     inds,
     radius_of_influence=100000,
     mask_zero=True,
 ):
     """
-    Interpolate data from FESOM mesh to the target grid using KDTree.
-    Parameters
-    ----------
-    data_in : array
-        1d array with data to interpolate.
-    x2, y2 : arrays
-        Arrays with coordinates of nodes.
-    elem : array
-        Array with elements.
-    lons/lats : array
-        2d arrays with target grid values.
-    distances : array
-        The distances to the nearest neighbors.
-    inds : ndarray of ints
-        The locations of the neighbors in data.
-    radius_of_influence : float, optional
-        Radius of influence for the interpolation. Default: 100000.
-    mask_zero : bool, optional
-        If True, mask all values that are equal to zero. Default: True.
-    Returns
-    -------
-    interpolated : array
-        Interpolated data.
-    """
 
+    Interpolates data using 2D KDTree interpolation.
+
+    Args:
+        data_in (np.ndarray): The input data array to be interpolated.
+        lons (np.ndarray): The longitudes of the target grid points.
+        distances (np.ndarray): The distances to the nearest neighbors.
+        inds (np.ndarray): The locations of the neighbors in the data.
+        radius_of_influence (float, optional): The radius of influence for interpolation.
+            Data points with distances beyond this radius will be assigned NaN. Defaults to 100000.
+        mask_zero (bool, optional): Flag indicating whether to mask zero values in the interpolated data
+            by assigning them NaN. Defaults to True.
+
+
+    Returns:
+        np.ndarray: The interpolated data array with the same shape as the target grid.
+
+    """
     interpolated = data_in[inds]
     interpolated[distances >= radius_of_influence] = np.nan
     if mask_zero:
@@ -181,17 +198,46 @@ def interpolate_kdtree2d(
 
 
 def mask_triangulation(data_in, triang2, elem, no_cyclic_elem):
+    """
+    Applies mask on the triangulation object based on zero data values.
+
+    Args:
+        data_in (np.ndarray): Input data values.
+        triang2 (tri.Triangulation): The triangulation object.
+        elem (np.ndarray): The element connectivity (elem) array.
+        no_cyclic_elem (np.ndarray): The non-cyclic elements of the mesh.
+
+    Returns:
+        tri.Triangulation: The masked triangulation object.
+    """
     data_in_on_elements = data_in[elem[no_cyclic_elem]].mean(axis=1)
     data_in_on_elements[data_in_on_elements == 0] = -999
-    mmask = data_in_on_elements == -999
-    data_in[data_in == 0] = np.nan
-    triang2.set_mask(mmask)
+    mask = data_in_on_elements == -999
+    triang2.set_mask(mask)
     return triang2
 
 
 def interpolate_triangulation(
-    data_in, triang2, trifinder, x2, y2, lon2, lat2, elem, no_cyclic_elem
+    data_in, 
+    triang2, 
+    trifinder,
+    lon2, 
+    lat2
 ):
+    """
+    Interpolates data using triangulation interpolation.
+
+    Args:
+        data_in (np.ndarray): The input data array to be interpolated.
+        triang2 (mtri.Triangulation): The triangulation object.
+        trifinder (Optional[mtri.TriFinder]): The triangulation finder. Defaults to None.
+        lon2 (np.ndarray): The longitudes of the target grid points.
+        lat2 (np.ndarray): The latitudes of the target grid points.
+
+    Returns:
+        np.ndarray: The interpolated data array.
+
+    """
     interpolated = mtri.LinearTriInterpolator(triang2, data_in, trifinder=trifinder)(
         lon2, lat2
     )
@@ -199,12 +245,43 @@ def interpolate_triangulation(
 
 
 def interpolate_linear_scipy(data_in, x2, y2, lon2, lat2):
+    """
+    Interpolates data using linear interpolation with SciPy.
+
+    Args:
+        data_in (np.ndarray): The input data array to be interpolated.
+        x2 (np.ndarray): The x-coordinates of the mesh nodes.
+        y2 (np.ndarray): The y-coordinates of the mesh nodes.
+        lon2 (np.ndarray): The longitudes of the target grid points.
+        lat2 (np.ndarray): The latitudes of the target grid points.
+
+    Returns:
+        np.ndarray: The interpolated data array.
+
+    """
     points = np.vstack((x2, y2)).T
     interpolated = LinearNDInterpolator(points, data_in)(lon2, lat2)
     return interpolated
 
 
 def parse_depths(depths, depths_from_file):
+    """
+    Parses the selected depths from the available depth values and returns the corresponding depth indices and values.
+    If depths = -1 returns all depths from depths_from_file
+
+    Args:
+        depths (Union[int, str]): The input depths specification.
+            It can be an integer, a comma-separated list of integers,
+            or a range specified with a colon (e.g., "10:100").
+        depths_from_file (np.ndarray): The array of available depth values.
+
+    Returns:
+        tuple containing
+
+        -The depth indices (List[int])
+        -The depth values based on the input (List[int]) 
+
+    """
     depth_type = "list"
     if len(depths.split(",")) > 1:
         depths = list(map(int, depths.split(",")))
@@ -238,6 +315,19 @@ def parse_depths(depths, depths_from_file):
 
 
 def parse_timesteps(timesteps, time_shape):
+    """
+    Parses the timesteps input and returns the corresponding timesteps as a list or range.
+
+    Args:
+        timesteps (Union[int, str]): The input timesteps specification.
+            It can be an integer, a colon-separated range (e.g., "10:100"),
+            a step range (e.g., "10:100:2"), or a comma-separated list of integers.
+        time_shape (int): The total number of available timesteps.
+
+    Returns:
+        List[Union[int, range]]: The parsed timesteps as a list or range.
+
+    """
 
     if len(timesteps.split(":")) == 2:
         y = range(int(timesteps.split(":")[0]), int(timesteps.split(":")[1]))
@@ -259,6 +349,18 @@ def parse_timesteps(timesteps, time_shape):
 
 
 def parse_timedelta(timedelta_arg):
+    """
+    Parses the timedelta argument and returns a numpy timedelta64 object.
+
+    Args:
+        timedelta_arg (str): The input timedelta argument in the format "<value><unit>".
+            The value represents the magnitude of the timedelta, and the unit specifies
+            the time unit (e.g., "s" for seconds, "m" for minutes, "h" for hours, "d" for days).
+
+    Returns:
+        np.timedelta64: The parsed numpy timedelta64 object.
+
+    """
     timedelta_val = timedelta_arg[:-1]
     timedelta_unit = timedelta_arg[-1:]
     timedelta = np.timedelta64(timedelta_val, timedelta_unit)
@@ -279,6 +381,26 @@ def save_data(
     lat,
     out_path,
 ):
+    """
+    Saves the interpolated data to a NetCDF file.
+
+    Args:
+        data (xr.Dataset): The original dataset containing the input data, whose attributes will be taken.
+        args (argparse.Namespace): Parsed command-line arguments.
+        timesteps (Union[int, List[int]]): The indices or index of the selected timesteps to save.
+        variable_name (str): The name of the interpolated variable.
+        interpolated3d (np.ndarray): The interpolated 3D data array.
+        realdepths (List[float]): The real depths corresponding to the interpolated depths.
+        x (np.ndarray): The longitudes of the interpolated data.
+        y (np.ndarray): The latitudes of the interpolated data.
+        lon (np.ndarray): The longitudes of the original dataset.
+        lat (np.ndarray): The latitudes of the original dataset.
+        out_path (str): The path to save the output NetCDF file.
+
+    Returns:
+        None: This function does not return any value.
+
+    """
     attributes = update_attrs(data.attrs, args)
     # if args.rotate:
     #     attributes2 = update_attrs(data2.attrs, args)
@@ -353,6 +475,15 @@ def save_data(
 
 
 def fint(args=None):
+    """
+    Interpolates FESOM2 data to a regular grid.
+
+    Args:
+        args (argparse.Namespace, optional): Arguments from the command line. Defaults to None.
+
+    Returns:
+        None
+    """
     parser = argparse.ArgumentParser(
         prog="pfinterp", description="Interpolates FESOM2 data to regular grid."
     )
@@ -390,7 +521,7 @@ def fint(args=None):
         help="Several options are available:\
             - Map boundaries in -180 180 -90 90 format that will be used for interpolation.\
             - Use one of the predefined regions. Available: gs (Golf Stream), \
-                trop (Atlantic Tropics), arctic, gulf (also Golf Stream, but based on Mercator projection.)\))",
+                trop (Atlantic Tropics), arctic, gulf (also Golf Stream, but based on Mercator projection.)))",
     )
 
     parser.add_argument(
@@ -652,28 +783,21 @@ def fint(args=None):
                             data_in2, triang2, elem, no_cyclic_elem
                         )
                 interpolated = interpolate_triangulation(
-                    data_in, triang2, trifinder, x2, y2, lon, lat, elem, no_cyclic_elem
+                    data_in, triang2, trifinder,lon, lat
                 )
+
                 if args.rotate:
                     interpolated2 = interpolate_triangulation(
                         data_in2,
                         triang2_2,
                         trifinder,
-                        x2,
-                        y2,
                         lon,
-                        lat,
-                        elem,
-                        no_cyclic_elem,
+                        lat
                     )
             elif interpolation == "nn":
                 interpolated = interpolate_kdtree2d(
                     data_in,
-                    x2,
-                    y2,
-                    elem,
                     lon,
-                    lat,
                     distances,
                     inds,
                     radius_of_influence=radius_of_influence,
@@ -682,11 +806,7 @@ def fint(args=None):
                 if args.rotate:
                     interpolated2 = interpolate_kdtree2d(
                         data_in2,
-                        x2,
-                        y2,
-                        elem,
                         lon,
-                        lat,
                         distances,
                         inds,
                         radius_of_influence=radius_of_influence,

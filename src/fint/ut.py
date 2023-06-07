@@ -4,6 +4,17 @@ import numpy as np
 
 
 def update_attrs(ds, args):
+    """
+    Updates attributes of the dataset with values from the arguments.
+
+    Args:
+        ds (dict): The dataset attributes dictionary to update.
+        args (argparse.Namespace): The arguments containing attribute values.
+
+    Returns:
+        dict: The updated dataset attributes dictionary.
+
+    """
     if args.target is not None:
         ds["target"] = args.target
 
@@ -16,6 +27,21 @@ def update_attrs(ds, args):
 
 
 def nodes_or_ements(data, variable_name, node_num, elem_num):
+    """
+    Determines if a variable in the data corresponds to nodes or elements.
+
+    Args:
+        data (dict): The data dictionary.
+        variable_name (str): The name of the variable to check.
+        node_num (int): The expected number of nodes.
+        elem_num (int): The expected number of elements.
+
+    Returns:
+        str: Either "nodes" or "elements" based on the shape of the variable.
+
+    """
+
+
     if data[variable_name].shape[-1] == node_num:
         return "nodes"
     elif data[variable_name].shape[-1] == elem_num:
@@ -69,17 +95,19 @@ def match_longitude_format(x2, y2, lon, lat):
 
 
 def compute_face_coords(x2, y2, elem):
-    """Compute coordinates of elements (triangles)
-    Parameters:
-    -----------
-    mesh: mesh object
-        fesom mesh object
+    """
+    Compute the coordinates of the elements (triangles).
+
+    Args:
+        x2 (numpy array): X coordinates.
+        y2 (numpy array): Y coordinates.
+        elem (numpy array): Element indices.
+
     Returns:
-    --------
-    face_x: numpy array
-        x coordinates
-    face_y: numpy array
-        y coordinates
+        tuple containing
+
+        - face_x (numpy array): representing the computed x coordinates of the elements
+        - face_y (numpy array): representing the computed y coordinates of the elements
     """
     first_mean = x2[elem].mean(axis=1)
     j = np.where(np.abs(x2[elem][:, 0] - first_mean) > 100)[0]
@@ -93,25 +121,37 @@ def compute_face_coords(x2, y2, elem):
     face_y = y2[elem].mean(axis=1)
     return face_x, face_y
 
-
 def get_company_name(variable_name):
-    vector_vars = {}
-    vector_vars["u"] = ["u", "v"]
-    vector_vars["v"] = ["u", "v"]
-    vector_vars["uice"] = ["uice", "vice"]
-    vector_vars["vice"] = ["uice", "vice"]
-    vector_vars["unod"] = ["unod", "vnod"]
-    vector_vars["vnod"] = ["unod", "vnod"]
-    vector_vars["tau_x"] = ["tau_x", "tau_y"]
-    vector_vars["tau_y"] = ["tau_x", "tau_y"]
-    vector_vars["atmice_x"] = ["atmice_x", "atmice_y"]
-    vector_vars["atmice_y"] = ["atmice_x", "atmice_x"]
-    vector_vars["atmoce_x"] = ["atmoce_x", "atmoce_y"]
-    vector_vars["atmoce_y"] = ["atmoce_x", "atmoce_y"]
-    vector_vars["iceoce_x"] = ["iceoce_x", "iceoce_y"]
-    vector_vars["iceoce_y"] = ["iceoce_x", "iceoce_y"]
-    vector_vars["tx_sur"] = ["tx_sur", "ty_sur"]
-    vector_vars["ty_sur"] = ["tx_sur", "ty_sur"]
+    """
+    Get the corresponding vector variables for a given variable name.
+
+    Args:
+        variable_name (str): The variable name.
+
+    Returns:
+        list: A list of corresponding vector variables.
+
+    Raises:
+        KeyError: If the variable name is not found in the dictionary.
+    """
+    vector_vars = {
+        "u": ["u", "v"],
+        "v": ["u", "v"],
+        "uice": ["uice", "vice"],
+        "vice": ["uice", "vice"],
+        "unod": ["unod", "vnod"],
+        "vnod": ["unod", "vnod"],
+        "tau_x": ["tau_x", "tau_y"],
+        "tau_y": ["tau_x", "tau_y"],
+        "atmice_x": ["atmice_x", "atmice_y"],
+        "atmice_y": ["atmice_x", "atmice_x"],
+        "atmoce_x": ["atmoce_x", "atmoce_y"],
+        "atmoce_y": ["atmoce_x", "atmoce_y"],
+        "iceoce_x": ["iceoce_x", "iceoce_y"],
+        "iceoce_y": ["iceoce_x", "iceoce_y"],
+        "tx_sur": ["tx_sur", "ty_sur"],
+        "ty_sur": ["tx_sur", "ty_sur"],
+    }
 
     return vector_vars[variable_name]
 
@@ -119,24 +159,19 @@ def get_company_name(variable_name):
 def scalar_g2r(al, be, ga, lon, lat):
     """
     Converts geographical coordinates to rotated coordinates.
-    Parameters
-    ----------
-    al : float
-        alpha Euler angle
-    be : float
-        beta Euler angle
-    ga : float
-        gamma Euler angle
-    lon : array
-        1d array of longitudes in geographical coordinates
-    lat : array
-        1d array of latitudes in geographical coordinates
-    Returns
-    -------
-    rlon : array
-        1d array of longitudes in rotated coordinates
-    rlat : array
-        1d araay of latitudes in rotated coordinates
+
+    Parameters:
+        al (float): Alpha Euler angle.
+        be (float): Beta Euler angle.
+        ga (float): Gamma Euler angle.
+        lon (array): 1D array of longitudes in geographical coordinates.
+        lat (array): 1D array of latitudes in geographical coordinates.
+
+    Returns:
+        tuple containing
+
+        - lon (array): 1D array of longitudes in rotated coordinates.
+        - lat (array): 1D array of latitudes in rotated coordinates.
     """
 
     rad = np.pi / 180
@@ -192,24 +227,19 @@ def scalar_g2r(al, be, ga, lon, lat):
 def scalar_r2g(al, be, ga, rlon, rlat):
     """
     Converts rotated coordinates to geographical coordinates.
-    Parameters
-    ----------
-    al : float
-        alpha Euler angle
-    be : float
-        beta Euler angle
-    ga : float
-        gamma Euler angle
-    rlon : array
-        1d array of longitudes in rotated coordinates
-    rlat : array
-        1d araay of latitudes in rotated coordinates
-    Returns
-    -------
-    lon : array
-        1d array of longitudes in geographical coordinates
-    lat : array
-        1d array of latitudes in geographical coordinates
+
+    Parameters:
+        al (float): Alpha Euler angle.
+        be (float): Beta Euler angle.
+        ga (float): Gamma Euler angle.
+        rlon (array): 1D array of longitudes in rotated coordinates.
+        rlat (array): 1D array of latitudes in rotated coordinates.
+
+    Returns:
+        tuple containing
+
+        - lon (array): 1D array of longitudes in geographical coordinates.
+        - lat (array): 1D array of latitudes in geographical coordinates.
     """
 
     rad = np.pi / 180
@@ -262,32 +292,25 @@ def scalar_r2g(al, be, ga, rlon, rlat):
 
 def vec_rotate_r2g(al, be, ga, lon, lat, urot, vrot, flag):
     """
-    Rotate vectors from rotated coordinates to geographical coordinates.
-    Parameters
-    ----------
-    al : float
-        alpha Euler angle
-    be : float
-        beta Euler angle
-    ga : float
-        gamma Euler angle
-    lon : array
-        1d array of longitudes in rotated or geographical coordinates (see flag parameter)
-    lat : array
-        1d array of latitudes in rotated or geographical coordinates (see flag parameter)
-    urot : array
-        1d array of u component of the vector in rotated coordinates
-    vrot : array
-        1d array of v component of the vector in rotated coordinates
-    flag : 1 or 0
-        flag=1  - lon,lat are in geographical coordinate
-        flag=0  - lon,lat are in rotated coordinate
-    Returns
-    -------
-    u : array
-        1d array of u component of the vector in geographical coordinates
-    v : array
-        1d array of v component of the vector in geographical coordinates
+    Rotates vectors from rotated coordinates to geographical coordinates.
+
+    Parameters:
+        al (float): Alpha Euler angle.
+        be (float): Beta Euler angle.
+        ga (float): Gamma Euler angle.
+        lon (array): 1D array of longitudes in rotated or geographical coordinates (see flag parameter).
+        lat (array): 1D array of latitudes in rotated or geographical coordinates (see flag parameter).
+        urot (array): 1D array of u component of the vector in rotated coordinates.
+        vrot (array): 1D array of v component of the vector in rotated coordinates.
+        flag (int): Flag indicating the coordinate system of lon and lat:
+            - flag = 1: lon and lat are in geographical coordinates.
+            - flag = 0: lon and lat are in rotated coordinates.
+
+    Returns:
+        tuple containing
+
+        - u (array): 1D array of u component of the vector in geographical coordinates.
+        - v (array): 1D array of v component of the vector in geographical coordinates.
     """
 
     #   first get another coordinate
@@ -363,6 +386,23 @@ def vec_rotate_r2g(al, be, ga, lon, lat, urot, vrot, flag):
 
 
 def get_data_2d(datas, variable_names, ttime, dind, dimension_order, rotate, x2, y2):
+    """
+    Get 2D data from a multidimensional dataset and optionally rotate the data.
+
+    Parameters:
+        datas (list): List of dataset objects.
+        variable_names (list): List of variable names.
+        ttime (int): Time index.
+        dind (int): Dimension index.
+        dimension_order (str): Dimension order. Possible values: "normal" or "transpose".
+        rotate (bool): Flag indicating whether to rotate the data.
+        x2 (array): 1D array of x coordinates.
+        y2 (array): 1D array of y coordinates.
+
+    Returns:
+        If `datas` contains only one dataset, returns a 2D numpy array of the data.
+        If `datas` contains two datasets, returns a tuple of two 2D numpy arrays.
+    """
 
     if len(datas[0].dims) == 2:
         data_in = datas[0][variable_names[0]][ttime, :].values
