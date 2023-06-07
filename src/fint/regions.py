@@ -17,6 +17,7 @@ except ImportError:
     print(
         "Shapely is not installed, use --no_shape_mask to make things work with nearest neighbour interpolation."
     )
+from .ut import convert_lon_lat_to_180, convert_lon_lat_0_360
 
 
 def define_region_from_file(file):

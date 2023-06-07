@@ -20,6 +20,7 @@ from .ut import (
     get_data_2d,
     nodes_or_ements,
     update_attrs,
+    match_longitude_format,
 )
 
 
@@ -118,6 +119,7 @@ def load_mesh(mesh_path):
         - elem (np.ndarray): The element connectivity array.
 
     """
+
     nodes = pd.read_csv(
         mesh_path + "/nod2d.out",
         delim_whitespace=True,
@@ -168,6 +170,7 @@ def interpolate_kdtree2d(
     mask_zero=True,
 ):
     """
+
     Interpolates data using 2D KDTree interpolation.
 
     Args:
@@ -179,6 +182,7 @@ def interpolate_kdtree2d(
             Data points with distances beyond this radius will be assigned NaN. Defaults to 100000.
         mask_zero (bool, optional): Flag indicating whether to mask zero values in the interpolated data
             by assigning them NaN. Defaults to True.
+
 
     Returns:
         np.ndarray: The interpolated data array with the same shape as the target grid.
@@ -716,11 +720,12 @@ def fint(args=None):
     else:
         x, y, lon, lat = define_region_from_file(args.target)
 
+    x2, y2 = match_longitude_format(x2, y2, lon, lat)
     # if we want to use shapelly mask, load it
     if args.no_shape_mask is False:
         m2 = mask_ne(lon, lat)
 
-    # additional variables, that we need for sifferent interplations
+    # additional variables, that we need for different interplations
     if interpolation == "mtri_linear":
         no_cyclic_elem = get_no_cyclic(x2, elem)
         triang2 = mtri.Triangulation(x2, y2, elem[no_cyclic_elem])
