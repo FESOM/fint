@@ -22,6 +22,52 @@ def nodes_or_ements(data, variable_name, node_num, elem_num):
         return "elements"
 
 
+def convert_lon_lat_to_180(lon, lat):
+    # Ensure input lon and lat have the same shape
+    assert (
+        lon.shape == lat.shape
+    ), "Longitude and latitude arrays must have the same shape."
+
+    # Convert longitude values to -180 to 180 format
+    lon = (lon + 180) % 360 - 180
+
+    # Clip latitude values to -90 to 90 range if they exceed the limit
+    lat = np.clip(lat, -90, 90)
+
+    return lon, lat
+
+
+def convert_lon_lat_0_360(lon, lat):
+
+    # Ensure input lon and lat have the same shape
+    assert lon.shape == lat.shape, "Longitude and latitude arrays must have the same shape."
+
+    # Convert longitude values to 0 to 360 format
+    lon = (lon + 360) % 360
+
+    # Clip latitude values to -90 to 90 range if they exceed the limit
+    lat = np.clip(lat, -90, 90)
+
+    return lon, lat
+
+def match_longitude_format(x2, y2, lon, lat):
+    x2 = np.asarray(x2)
+    y2 = np.asarray(y2)
+    lon = np.asarray(lon)
+    lat = np.asarray(lat)
+
+    # Check if both longitude arrays are in the same format
+    if (lon.min() >= 0 and x2.min() < 0):
+        # Convert x2 to 0-360 format
+        x2, _ = convert_lon_lat_0_360(x2, y2)
+    elif (lon.min() < 0 and x2.min() >= 0):
+        # Convert x2 to -180-180 format
+        x2, _ = convert_lon_lat(x2, y2)
+
+    return x2, y2
+
+
+
 def compute_face_coords(x2, y2, elem):
     """Compute coordinates of elements (triangles)
     Parameters:

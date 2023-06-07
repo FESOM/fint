@@ -20,6 +20,7 @@ from .ut import (
     get_data_2d,
     nodes_or_ements,
     update_attrs,
+    match_longitude_format,
 )
 
 
@@ -89,6 +90,18 @@ def ind_for_depth(depth, depths_from_file):
 
 
 def load_mesh(mesh_path):
+    """
+    Load FESOM mesh from the given path.
+    Parameters
+    ----------
+    mesh_path : str
+        Path to the FESOM mesh.
+    Returns
+    -------
+    x2, y2, elem : arrays
+        Arrays with coordinates of nodes and elements.
+    """
+
     nodes = pd.read_csv(
         mesh_path + "/nod2d.out",
         delim_whitespace=True,
@@ -132,6 +145,31 @@ def interpolate_kdtree2d(
     radius_of_influence=100000,
     mask_zero=True,
 ):
+    """
+    Interpolate data from FESOM mesh to the target grid using KDTree.
+    Parameters
+    ----------
+    data_in : array
+        1d array with data to interpolate.
+    x2, y2 : arrays
+        Arrays with coordinates of nodes.
+    elem : array
+        Array with elements.
+    lons/lats : array
+        2d arrays with target grid values.
+    distances : array
+        The distances to the nearest neighbors.
+    inds : ndarray of ints
+        The locations of the neighbors in data.
+    radius_of_influence : float, optional
+        Radius of influence for the interpolation. Default: 100000.
+    mask_zero : bool, optional
+        If True, mask all values that are equal to zero. Default: True.
+    Returns
+    -------
+    interpolated : array
+        Interpolated data.
+    """
 
     interpolated = data_in[inds]
     interpolated[distances >= radius_of_influence] = np.nan
@@ -551,11 +589,12 @@ def fint(args=None):
     else:
         x, y, lon, lat = define_region_from_file(args.target)
 
+    x2, y2 = match_longitude_format(x2, y2, lon, lat)
     # if we want to use shapelly mask, load it
     if args.no_shape_mask is False:
         m2 = mask_ne(lon, lat)
 
-    # additional variables, that we need for sifferent interplations
+    # additional variables, that we need for different interplations
     if interpolation == "mtri_linear":
         no_cyclic_elem = get_no_cyclic(x2, elem)
         triang2 = mtri.Triangulation(x2, y2, elem[no_cyclic_elem])
