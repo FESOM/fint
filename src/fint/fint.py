@@ -578,7 +578,7 @@ def fint(args=None):
     )
     parser.add_argument(
         "--interp",
-        choices=["nn", "mtri_linear", "linear_scipy", "cdo_remapcon","cdo_remaplaf"],  # "idist", "linear", "cubic"],
+        choices=["nn", "mtri_linear", "linear_scipy", "cdo_remapcon","cdo_remaplaf","cdo_remapnn", "cdo_remapdis"],  # "idist", "linear", "cubic"],
         default="nn",
         help="Interpolation method. Options are \
             nn - nearest neighbor (KDTree implementation, fast), \
@@ -760,33 +760,67 @@ def fint(args=None):
         trifinder = triang2.get_trifinder()
     elif interpolation == "nn":
         distances, inds = create_indexes_and_distances(x2, y2, lon, lat, k=1, workers=4)
-    elif interpolation == "cdo_remapcon" or interpolation == "cdo_remaplaf":
-        target_grid_data = xr.Dataset(
-                            coords={
-                                "lon": (["lon"], x),
-                                "lat": (["lat"], y),
-                                "longitude": (["lat", "lon"], lon),
-                                "latitude": (["lat", "lon"], lat),
-                            }
-                        )   
-        attributes_lat = {'standard_name': 'latitude',
-                        'long_name': 'latitude',
-                        'units': 'degrees_north',
-                        'axis': 'Y'}
-        attributes_lon = {'standard_name': 'longitude',
-                        'long_name': 'longitude',
-                        'units': 'degrees_east',
-                        'axis': 'X'}
-        target_grid_data['lat'].attrs = attributes_lat
-        target_grid_data['lon'].attrs = attributes_lon
-        target_grid_path = out_path.replace(".nc", "target_grid.nc")
-        target_grid_data.to_netcdf(target_grid_path,encoding={
-                            "lat": {"dtype": np.dtype("double")},
-                            "lon": {"dtype": np.dtype("double")},
-                            "longitude": {"dtype": np.dtype("double")},
-                            "latitude": {"dtype": np.dtype("double")},
-                        },
-                    )
+    elif interpolation == "cdo_remapcon" or interpolation == "cdo_remaplaf" or interpolation == "cdo_remapnn" or interpolation == "cdo_remapdis":
+        gridtype = 'latlon'
+        gridsize = x.size*y.size
+        xsize = x.size
+        ysize = y.size
+        xname = 'longitude'
+        xlongname = 'longitude'
+        xunits = 'degrees_east'
+        yname = 'latitude'
+        ylongname = 'latitude'
+        yunits = 'degrees_north'
+        xfirst = float(lon[0,0])
+        xinc = float(lon[0,1]-lon[0,0])
+        yfirst = float(lat[0,0])
+        yinc = float(lat[1,0]-lat[0,0])
+        grid_mapping = []
+        grid_mapping_name = []
+        straight_vertical_longitude_from_pole = []
+        latitude_of_projection_origin = []
+        standard_parallel = []
+        if projection == "np":
+            gridtype = 'projection'
+            xlongname = 'x coordinate of projection'
+            xunits = 'meters'
+            ylongname = 'y coordinate of projection'
+            yunits = 'meters'
+            xfirst = float(x[0])
+            xinc = float(x[1]-x[0])
+            yfirst = float(y[0])
+            yinc = float(y[1]-y[0])
+            grid_mapping = 'crs'
+            grid_mapping_name = 'polar_stereographic'
+            straight_vertical_longitude_from_pole = 0.0
+            latitude_of_projection_origin = 90.0
+            standard_parallel = 71.0
+        
+        
+        formatted_content = f"""\
+        gridtype = {gridtype}
+        gridsize = {gridsize}
+        xsize = {xsize}
+        ysize = {ysize}
+        xname = {xname}
+        xlongname = "{xlongname}"
+        xunits = "{xunits}"
+        yname = {yname}
+        ylongname = "{ylongname}"
+        yunits = "{yunits}"
+        xfirst = {xfirst}
+        xinc = {xinc}
+        yfirst = {yfirst}
+        yinc = {yinc}
+        grid_mapping = {grid_mapping}
+        grid_mapping_name = {grid_mapping_name}
+        straight_vertical_longitude_from_pole = {straight_vertical_longitude_from_pole}
+        latitude_of_projection_origin = {latitude_of_projection_origin}
+        standard_parallel = {standard_parallel}"""
+        
+        target_grid_path = out_path.replace(".nc", "target_grid.txt")
+        with open(target_grid_path, 'w') as file:
+            file.write(formatted_content)
         
         endswith = "_nodes_IFS.nc"
         if placement == "elements":
@@ -881,7 +915,7 @@ def fint(args=None):
                 if args.rotate:
                     interpolated2 = interpolate_linear_scipy(data_in2, x2, y2, lon, lat)
             
-            elif interpolation == "cdo_remapcon" or interpolation == "cdo_remaplaf":
+            elif interpolation == "cdo_remapcon" or interpolation == "cdo_remaplaf" or interpolation == "cdo_remapnn" or interpolation == "cdo_remapdis":
                 input_data = xr.Dataset(
                                 {variable_name: (["nod2"], data_in)},
 
@@ -955,7 +989,7 @@ def fint(args=None):
                     lat,
                     out_path_one2,
                 )
-    if interpolation == "cdo_remapcon" or interpolation == "cdo_remaplaf":               
+    if interpolation == "cdo_remapcon" or interpolation == "cdo_remaplaf" or interpolation == "cdo_remapnn" or interpolation == "cdo_remapdis":      
         os.remove(target_grid_path)
 
     # save data (always 4D array)
