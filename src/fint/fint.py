@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import subprocess
+from smmregrid import Regridder
 from scipy.interpolate import (
     CloughTocher2DInterpolator,
     LinearNDInterpolator,
@@ -293,6 +294,34 @@ def interpolate_cdo(target_grid,gridfile,original_file,output_file,variable_name
     os.remove(output_file)
     return interpolated
 
+def generate_cdo_weights(target_grid,gridfile,original_file,output_file,interpolation):
+    """
+    Generate CDO weights for interpolation using ssmregrid.
+
+    Args:
+        target_grid (str): Path to the target grid file.
+        gridfile (str): Path to the grid file associated with the original file.
+        original_file (str): Path to the original file containing the data to be remapped.
+        output_file (str): Path to the output file where the weights will be saved.
+
+    Returns:
+        xr.Dataset: Generated weights as an xarray Dataset.
+    """
+    command = [
+        "cdo",
+        f"-gen{interpolation.split('_')[-1]},{target_grid}",
+        f"-setgrid,{gridfile}",
+        f"{original_file}",
+        f"{output_file}"
+    ]
+
+    # Execute the command
+    subprocess.run(command)
+    
+    weights = xr.open_dataset(output_file)
+    os.remove(output_file)
+    return weights
+
 def parse_depths(depths, depths_from_file):
     """
     Parses the selected depths from the available depth values and returns the corresponding depth indices and values.
@@ -578,7 +607,9 @@ def fint(args=None):
     )
     parser.add_argument(
         "--interp",
-        choices=["nn", "mtri_linear", "linear_scipy", "cdo_remapcon","cdo_remaplaf","cdo_remapnn", "cdo_remapdis"],  # "idist", "linear", "cubic"],
+        choices=["nn", "mtri_linear", "linear_scipy",
+                 "cdo_remapcon","cdo_remaplaf","cdo_remapnn", "cdo_remapdis",
+                 "smm_con","smm_laf","smm_nn","smm_dis"],  # "idist", "linear", "cubic"],
         default="nn",
         help="Interpolation method. Options are \
             nn - nearest neighbor (KDTree implementation, fast), \
@@ -760,7 +791,7 @@ def fint(args=None):
         trifinder = triang2.get_trifinder()
     elif interpolation == "nn":
         distances, inds = create_indexes_and_distances(x2, y2, lon, lat, k=1, workers=4)
-    elif interpolation == "cdo_remapcon" or interpolation == "cdo_remaplaf" or interpolation == "cdo_remapnn" or interpolation == "cdo_remapdis":
+    elif interpolation in ["cdo_remapcon", "cdo_remaplaf", "cdo_remapnn", "cdo_remapdis", "smm_con", "smm_laf", "smm_nn", "smm_dis"]:
         gridtype = 'latlon'
         gridsize = x.size*y.size
         xsize = x.size
@@ -915,12 +946,10 @@ def fint(args=None):
                 if args.rotate:
                     interpolated2 = interpolate_linear_scipy(data_in2, x2, y2, lon, lat)
             
-            elif interpolation == "cdo_remapcon" or interpolation == "cdo_remaplaf" or interpolation == "cdo_remapnn" or interpolation == "cdo_remapdis":
-                input_data = xr.Dataset(
-                                {variable_name: (["nod2"], data_in)},
-
-                            )
-                
+            elif interpolation in ["cdo_remapcon", "cdo_remaplaf", "cdo_remapnn", "cdo_remapdis"]:
+                input_data = xr.Dataset({variable_name: (["nod2"], data_in)})
+                if args.rotate:
+                    input_data = xr.Dataset({variable_name: (["nod2"], data_in2)})
                 output_file_path = out_path.replace(".nc", "output_cdo_file.nc")
                 input_file_path = args.data.replace(".nc","cdo_interpolation.nc")
                 input_data.to_netcdf(input_file_path,encoding={
@@ -935,6 +964,26 @@ def fint(args=None):
                                                 interpolation
                                                 )
                 os.remove(input_file_path)
+
+            elif interpolation in ["smm_con", "smm_laf", "smm_nn", "smm_dis"]:
+                input_data = xr.Dataset({variable_name: (["nod2"], data_in)})
+                if args.rotate:
+                    input_data = xr.Dataset({variable_name: (["nod2"], data_in2)})
+                input_file_path = args.data.replace(".nc","cdo_interpolation.nc")
+                input_data.to_netcdf(input_file_path,encoding={
+                            variable_name: {"dtype": np.dtype("double")},
+                        },
+                    )
+                output_file_path = out_path.replace(".nc", "weighs_cdo.nc")
+                weights = generate_cdo_weights(target_grid_path,
+                                            gridfile,
+                                            input_file_path,
+                                            output_file_path,
+                                            interpolation)
+                os.remove(input_file_path)
+                interpolator = Regridder(weights=weights)
+                interpolated = interpolator.regrid(input_data)
+                interpolated = interpolated[variable_name].values
 
             # masking of the data
             if mask_file is not None:
@@ -989,7 +1038,7 @@ def fint(args=None):
                     lat,
                     out_path_one2,
                 )
-    if interpolation == "cdo_remapcon" or interpolation == "cdo_remaplaf" or interpolation == "cdo_remapnn" or interpolation == "cdo_remapdis":      
+    if interpolation in ["cdo_remapcon","cdo_remaplaf","cdo_remapnn","cdo_remapdis","smm_con","smm_nn","smm_laf","smm_dis"]:    
         os.remove(target_grid_path)
 
     # save data (always 4D array)
