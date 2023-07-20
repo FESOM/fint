@@ -261,7 +261,7 @@ def interpolate_linear_scipy(data_in, x2, y2, lon2, lat2):
     return interpolated
 
 
-def interpolate_cdo(target_grid,gridfile,original_file,output_file,variable_name,interpolation, mask_zero):
+def interpolate_cdo(target_grid,gridfile,original_file,output_file,variable_name,interpolation, mask_zero=True):
     """
     Interpolate a variable in a file using CDO (Climate Data Operators).
 
