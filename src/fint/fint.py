@@ -262,7 +262,7 @@ def interpolate_linear_scipy(data_in, x2, y2, lon2, lat2):
     return interpolated
 
 
-def interpolate_cdo(target_grid,gridfile,original_file,output_file,variable_name,interpolation):
+def interpolate_cdo(target_grid,gridfile,original_file,output_file,variable_name,interpolation, mask_zero=True):
     """
     Interpolate a variable in a file using CDO (Climate Data Operators).
 
@@ -280,12 +280,13 @@ def interpolate_cdo(target_grid,gridfile,original_file,output_file,variable_name
 
     command = [
         "cdo",
-        "-setctomiss,0",
         f"-{interpolation.split('_')[1]},{target_grid}",
         f"-setgrid,{gridfile}",
         f"{original_file}",
         f"{output_file}"
     ]
+    if mask_zero:
+        command.insert(1, "-setctomiss,0")
 
     # Execute the command
     subprocess.run(command)
@@ -961,7 +962,8 @@ def fint(args=None):
                                                input_file_path,
                                                output_file_path,
                                                variable_name,
-                                                interpolation
+                                                interpolation,
+                                                mask_zero=args.no_mask_zero
                                                 )
                 os.remove(input_file_path)
 
@@ -983,6 +985,9 @@ def fint(args=None):
                 os.remove(input_file_path)
                 interpolator = Regridder(weights=weights)
                 interpolated = interpolator.regrid(input_data)
+                mask_zero=args.no_mask_zero
+                if mask_zero:
+                    interpolated[interpolated == 0] = np.nan
                 interpolated = interpolated[variable_name].values
 
             # masking of the data
