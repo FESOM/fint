@@ -6,6 +6,7 @@ import matplotlib.tri as mtri
 import numpy as np
 import pandas as pd
 import xarray as xr
+import subprocess
 from scipy.interpolate import (
     CloughTocher2DInterpolator,
     LinearNDInterpolator,
@@ -263,6 +264,40 @@ def interpolate_linear_scipy(data_in, x2, y2, lon2, lat2):
     interpolated = LinearNDInterpolator(points, data_in)(lon2, lat2)
     return interpolated
 
+
+def interpolate_cdo(target_grid,gridfile,original_file,output_file,variable_name,interpolation, mask_zero=True):
+    """
+    Interpolate a variable in a file using CDO (Climate Data Operators).
+
+    Args:
+        target_grid (str): Path to the target grid file.
+        gridfile (str): Path to the grid file associated with the original file.
+        original_file (str): Path to the original file containing the variable to be interpolated.
+        output_file (str): Path to the output file where the interpolated variable will be saved.
+        variable_name (str): Name of the variable to be interpolated.
+        interpolation (str): Interpolation method to be used (cdo_remapcon,cdo_remaplaf,cdo_remapnn, cdo_remapdis).
+
+    Returns:
+        np.ndarray: Interpolated variable data as a NumPy array.
+    """
+
+    command = [
+            "cdo",
+            f"-{interpolation.split('_')[1]},{target_grid}",
+            f"-setgrid,{gridfile}",
+            f"{original_file}",
+            f"{output_file}"
+        ]
+    if mask_zero:
+        command.insert(1, "-setctomiss,0")
+
+
+    # Execute the command
+    subprocess.run(command)
+
+    interpolated = xr.open_dataset(output_file)[variable_name].values
+    os.remove(output_file)
+    return interpolated
 
 def parse_depths(depths, depths_from_file):
     """
@@ -549,7 +584,7 @@ def fint(args=None):
     )
     parser.add_argument(
         "--interp",
-        choices=["nn", "mtri_linear", "linear_scipy"],  # "idist", "linear", "cubic"],
+        choices=["nn", "mtri_linear", "linear_scipy", "cdo_remapcon","cdo_remaplaf","cdo_remapnn", "cdo_remapdis"],  # "idist", "linear", "cubic"],
         default="nn",
         help="Interpolation method. Options are \
             nn - nearest neighbor (KDTree implementation, fast), \
@@ -732,6 +767,76 @@ def fint(args=None):
         trifinder = triang2.get_trifinder()
     elif interpolation == "nn":
         distances, inds = create_indexes_and_distances(x2, y2, lon, lat, k=1, workers=4)
+    elif interpolation in ["cdo_remapcon", "cdo_remaplaf", "cdo_remapnn", "cdo_remapdis"]:
+        gridtype = 'latlon'
+        gridsize = x.size*y.size
+        xsize = x.size
+        ysize = y.size
+        xname = 'longitude'
+        xlongname = 'longitude'
+        xunits = 'degrees_east'
+        yname = 'latitude'
+        ylongname = 'latitude'
+        yunits = 'degrees_north'
+        xfirst = float(lon[0,0])
+        xinc = float(lon[0,1]-lon[0,0])
+        yfirst = float(lat[0,0])
+        yinc = float(lat[1,0]-lat[0,0])
+        grid_mapping = []
+        grid_mapping_name = []
+        straight_vertical_longitude_from_pole = []
+        latitude_of_projection_origin = []
+        standard_parallel = []
+        if projection == "np":
+            gridtype = 'projection'
+            xlongname = 'x coordinate of projection'
+            xunits = 'meters'
+            ylongname = 'y coordinate of projection'
+            yunits = 'meters'
+            xfirst = float(x[0])
+            xinc = float(x[1]-x[0])
+            yfirst = float(y[0])
+            yinc = float(y[1]-y[0])
+            grid_mapping = 'crs'
+            grid_mapping_name = 'polar_stereographic'
+            straight_vertical_longitude_from_pole = 0.0
+            latitude_of_projection_origin = 90.0
+            standard_parallel = 71.0
+        
+        
+        formatted_content = f"""\
+        gridtype = {gridtype}
+        gridsize = {gridsize}
+        xsize = {xsize}
+        ysize = {ysize}
+        xname = {xname}
+        xlongname = "{xlongname}"
+        xunits = "{xunits}"
+        yname = {yname}
+        ylongname = "{ylongname}"
+        yunits = "{yunits}"
+        xfirst = {xfirst}
+        xinc = {xinc}
+        yfirst = {yfirst}
+        yinc = {yinc}
+        grid_mapping = {grid_mapping}
+        grid_mapping_name = {grid_mapping_name}
+        straight_vertical_longitude_from_pole = {straight_vertical_longitude_from_pole}
+        latitude_of_projection_origin = {latitude_of_projection_origin}
+        standard_parallel = {standard_parallel}"""
+        
+        target_grid_path = out_path.replace(".nc", "target_grid.txt")
+        with open(target_grid_path, 'w') as file:
+            file.write(formatted_content)
+        
+        endswith = "_nodes_IFS.nc"
+        if placement == "elements":
+            endswith = "_elements_IFS.nc"
+        for root, dirs, files in os.walk(args.meshpath):
+            for file in files:
+                if file.endswith(endswith):
+                    gridfile = os.path.join(root, file)
+
 
     # we will fill this array with interpolated values
     if not args.oneout:
@@ -816,6 +921,27 @@ def fint(args=None):
                 interpolated = interpolate_linear_scipy(data_in, x2, y2, lon, lat)
                 if args.rotate:
                     interpolated2 = interpolate_linear_scipy(data_in2, x2, y2, lon, lat)
+            
+            elif interpolation in ["cdo_remapcon", "cdo_remaplaf", "cdo_remapnn", "cdo_remapdis"]:
+                input_data = xr.Dataset({variable_name: (["nod2"], data_in)})
+                if args.rotate:
+                    input_data = xr.Dataset({variable_name: (["nod2"], data_in2)})
+
+                output_file_path = out_path.replace(".nc", "output_cdo_file.nc")
+                input_file_path = args.data.replace(".nc","cdo_interpolation.nc")
+                input_data.to_netcdf(input_file_path,encoding={
+                            variable_name: {"dtype": np.dtype("double")},
+                        },
+                    )
+                interpolated = interpolate_cdo(target_grid_path,
+                                               gridfile,
+                                               input_file_path,
+                                               output_file_path,
+                                               variable_name,
+                                                interpolation,
+                                                mask_zero=args.no_mask_zero
+                                                )
+                os.remove(input_file_path)
 
             # masking of the data
             if mask_file is not None:
@@ -870,6 +996,8 @@ def fint(args=None):
                     lat,
                     out_path_one2,
                 )
+    if interpolation in ["cdo_remapcon", "cdo_remaplaf", "cdo_remapnn", "cdo_remapdis"]:      
+        os.remove(target_grid_path)
 
     # save data (always 4D array)
     if not args.oneout:

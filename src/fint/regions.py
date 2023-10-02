@@ -96,7 +96,8 @@ def define_region(box, res, projection=None):
         if not res is None:
             lonNumber, latNumber = res
         else:
-            lonNumber, latNumber = 360, 170
+            res = (360,170)
+            lonNumber, latNumber = res
 
         x = np.linspace(left, right, lonNumber)
         y = np.linspace(down, up, latNumber)
@@ -135,7 +136,8 @@ def region_gs(res):
     if not res is None:
         lonNumber, latNumber = res
     else:
-        lonNumber, latNumber = 300, 250
+        res = (300,250)
+        lonNumber, latNumber = res
     left = -80
     right = -30
     bottom = 20
@@ -166,7 +168,8 @@ def region_trop(res):
     if not res is None:
         lonNumber, latNumber = res
     else:
-        lonNumber, latNumber = 751, 400
+        res = (751,400)
+        lonNumber, latNumber = res
     left = -60
     right = 15
     bottom = -9.95
@@ -200,7 +203,8 @@ def region_arctic(res):
     if not res is None:
         lonNumber, latNumber = res
     else:
-        lonNumber, latNumber = 500, 500
+        res = (500,500)
+        lonNumber, latNumber = res
     left = -180
     right = 180
     bottom = 60
@@ -235,7 +239,8 @@ def region_gulf(res):
     if not res is None:
         lonNumber, latNumber = res
     else:
-        lonNumber, latNumber = 1000, 500
+        res = (1000, 500)
+        lonNumber, latNumber = res
     left = -80
     right = -30
     bottom = 20
@@ -280,7 +285,8 @@ def region_cartopy(box, res, projection="mer"):
     if not res is None:
         lonNumber, latNumber = res
     else:
-        lonNumber, latNumber = 500, 500
+        res = (500,500)
+        lonNumber, latNumber = res
     left, right, down, up = list(map(float, box.split(",")))
     print(left, right, down, up)
     # left = -80
