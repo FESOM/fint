@@ -13,3 +13,7 @@ dependencies:
   - pip
   - cartopy
   - shapely
+  - pip:
+    - smmregrid
+    
+
