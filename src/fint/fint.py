@@ -990,10 +990,10 @@ def fint(args=None):
                 os.remove(input_file_path)
                 interpolator = Regridder(weights=weights)
                 interpolated = interpolator.regrid(input_data)
+                interpolated = interpolated[variable_name].values
                 mask_zero=args.no_mask_zero
                 if mask_zero:
                     interpolated[interpolated == 0] = np.nan
-                interpolated = interpolated[variable_name].values
 
             # masking of the data
             if mask_file is not None:
