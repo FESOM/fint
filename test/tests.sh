@@ -47,6 +47,12 @@ fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 --interp cdo_remaplaf
 fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b "-150, 150, -50, 70" --interp cdo_remaplaf
 fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b arctic --interp cdo_remapcon
 
+#smm_regrid
+fint ${FILE} ${MESH} --influence 500000 -t 0 -d -1  --interp smm_con --no_shape_mask
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b "-150, 150, -50, 70" --interp smm_laf
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b arctic --interp smm_nn
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 --interp smm_dis
+
 
 # create mask
 fint ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp mtri_linear -o mask.nc
