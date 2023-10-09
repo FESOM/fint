@@ -48,10 +48,15 @@ fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b "-150, 150, -50, 70" --interp cdo_rema
 fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b arctic --interp cdo_remapcon
 
 #smm_regrid
-fint ${FILE} ${MESH} --influence 500000 -t 0 -d -1  --interp smm_con --no_shape_mask
-fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b "-150, 150, -50, 70" --interp smm_laf
-fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b arctic --interp smm_nn
-fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 --interp smm_dis
+fint ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp smm_remapcon --no_shape_mask
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b "-150, 150, -50, 70" --interp smm_remaplaf
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b arctic --interp smm_remapnn
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 --interp smm_remapdis
+
+#saving weights and reuse it
+fint ${FILE} ${MESH} ${INFL} -t 1:5 -d -1 -b "-150, 150, -50, 70" --interp smm_remapcon --save_weights
+export WEIGHTS="--weightspath ./temp.fesom.1948_interpolated_-150_150_-50_70_2.5_6125.0_1_4weighs_cdo.nc"
+fint ${FILE} ${MESH} ${INFL} -t 1:5 -d -1 -b "-150, 150, -50, 70" --interp cdo_remapcon ${WEIGHTS}
 
 
 # create mask
