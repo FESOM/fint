@@ -6,6 +6,8 @@ import matplotlib.tri as mtri
 import numpy as np
 import pandas as pd
 import xarray as xr
+import xesmf as xe
+import sparse
 import subprocess
 from smmregrid import Regridder
 from scipy.interpolate import (
@@ -334,6 +336,54 @@ def generate_cdo_weights(target_grid,gridfile,original_file,output_file,interpol
 
     return weights
 
+def xesmf_weights_to_xarray(regridder):
+    """
+    Converts xESMF regridder weights to an xarray Dataset.
+
+    This function takes a regridder object from xESMF, extracts the weights data,
+    and converts it into an xarray Dataset with relevant dimensions and attributes.
+
+    Args:
+        regridder (xesmf.Regridder): A regridder object created using xESMF, which contains the weights to be converted.
+
+    Returns:
+        xr.Dataset: An xarray Dataset containing the weights data with dimensions 'n_s', 'col', and 'row'.
+    """
+    w = regridder.weights.data
+    dim = 'n_s'
+    ds = xr.Dataset(
+        {
+            'S': (dim, w.data),
+            'col': (dim, w.coords[1, :] + 1),
+            'row': (dim, w.coords[0, :] + 1),
+        }
+    )
+    ds.attrs = {'n_in': regridder.n_in, 'n_out': regridder.n_out}
+    return ds
+
+def reconstruct_xesmf_weights(ds_w):
+    """
+    Reconstruct weights into a format that xESMF understands.
+
+    This function takes a dataset with weights in a specific format and converts
+    it into a format that can be used by xESMF for regridding.
+
+    Args:
+        ds_w (xarray.Dataset): The input dataset containing weights data.
+            It should have 'S', 'col', 'row', and appropriate attributes 'n_out' and 'n_in'.
+
+    Returns:
+        xarray.DataArray: A DataArray containing reconstructed weights in COO format suitable for use with xESMF.
+    """
+    col = ds_w['col'].values - 1
+    row = ds_w['row'].values - 1
+    s = ds_w['S'].values
+    n_out, n_in = ds_w.attrs['n_out'], ds_w.attrs['n_in']
+    crds = np.stack([row, col])
+    return xr.DataArray(
+        sparse.COO(crds, s, (n_out, n_in)), dims=('out_dim', 'in_dim'), name='weights'
+    )
+
 def parse_depths(depths, depths_from_file):
     """
     Parses the selected depths from the available depth values and returns the corresponding depth indices and values.
@@ -621,7 +671,7 @@ def fint(args=None):
         "--interp",
         choices=["nn", "mtri_linear", "linear_scipy",
                  "cdo_remapcon","cdo_remaplaf","cdo_remapnn", "cdo_remapdis",
-                 "smm_remapcon","smm_remaplaf","smm_remapnn", "smm_remapdis"],  # "idist", "linear", "cubic"],
+                 "smm_remapcon","smm_remaplaf","smm_remapnn", "smm_remapdis", "xesmf_nearest_s2d"],  # "idist", "linear", "cubic"],
         default="nn",
         help="Interpolation method. Options are \
             nn - nearest neighbor (KDTree implementation, fast), \
@@ -813,6 +863,29 @@ def fint(args=None):
         trifinder = triang2.get_trifinder()
     elif interpolation == "nn":
         distances, inds = create_indexes_and_distances(x2, y2, lon, lat, k=1, workers=4)
+    elif interpolation in ['xesmf_nearest_s2d']:
+        ds_in = xr.open_dataset(args.data)
+        ds_in = ds_in.assign_coords(lat=('nod2',y2), lon=('nod2',x2))
+        ds_in.lat.attrs = {'units': 'degrees', 'standard_name': 'latitude'}
+        ds_in.lon.attrs = {'units': 'degrees', 'standard_name': 'longitude'}
+        ds_out = xr.Dataset(
+        {
+            'x': xr.DataArray(x, dims=['x']),
+            'y': xr.DataArray(y, dims=['y']),
+            'lat': xr.DataArray(lat, dims=['y', 'x']),
+            'lon': xr.DataArray(lon, dims=['y', 'x']),
+        })
+        if args.weightspath is not None:
+            xesmf_weights_path = args.weightspath
+            ds_w = xr.open_dataset(xesmf_weights_path)
+            wegiths_xesmf = reconstruct_xesmf_weights(ds_w)
+            regridder = xe.Regridder(ds_in,ds_out, method='nearest_s2d', weights=wegiths_xesmf,locstream_in=True)
+        else:
+            regridder = xe.Regridder(ds_in, ds_out, method='nearest_s2d', locstream_in=True)
+        if args.save_weights is True:
+            ds_w = xesmf_weights_to_xarray(regridder)
+            xesmf_weights_path = out_path.replace(".nc", "xesmf_weights.nc")
+            ds_w.to_netcdf(xesmf_weights_path)
     elif interpolation in ["cdo_remapcon", "cdo_remaplaf", "cdo_remapnn", "cdo_remapdis", "smm_remapcon", "smm_remaplaf", "smm_remapnn", "smm_remapdis"]:
         gridtype = 'latlon'
         gridsize = x.size*y.size
@@ -1028,6 +1101,13 @@ def fint(args=None):
                 mask_zero=args.no_mask_zero
                 if mask_zero:
                     interpolated[interpolated == 0] = np.nan
+            
+            elif interpolation in ['xesmf_nearest_s2d']:
+                ds_in = xr.Dataset({variable_name: (["nod2"], data_in)})
+                ds_in = ds_in.assign_coords(lat=('nod2',y2), lon=('nod2',x2))
+                ds_in.lat.attrs = {'units': 'degrees', 'standard_name': 'latitude'}
+                ds_in.lon.attrs = {'units': 'degrees', 'standard_name': 'longitude'}
+                interpolated = regridder(ds_in)[variable_name].values
 
             # masking of the data
             if mask_file is not None:

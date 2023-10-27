@@ -53,11 +53,19 @@ fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b "-150, 150, -50, 70" --interp smm_rema
 fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b arctic --interp smm_remapnn
 fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 --interp smm_remapdis
 
+#xesmf_regrid
+fint ${FILE} ${MESH} ${INFL} -t -1 -d -1 -b "-150, 150, -50, 70" --interp xesmf_nearest_s2d
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b arctic --interp xesmf_nearest_s2d
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b gulf --interp xesmf_nearest_s2d
+
 #saving weights and reuse it
 fint ${FILE} ${MESH} ${INFL} -t 1:5 -d -1 -b "-150, 150, -50, 70" --interp smm_remapcon --save_weights
 export WEIGHTS="--weightspath ./temp.fesom.1948_interpolated_-150_150_-50_70_2.5_6125.0_1_4weighs_cdo.nc"
 fint ${FILE} ${MESH} ${INFL} -t 1:5 -d -1 -b "-150, 150, -50, 70" --interp cdo_remapcon ${WEIGHTS}
 
+fint ${FILE} ${MESH} ${INFL} -t 1:5 -d -1 -b "-150, 150, -50, 70" --interp xesmf_nearest_s2d --save_weights
+export WEIGHTS="--weightspath ./temp.fesom.1948_interpolated_-150_150_-50_70_2.5_6125.0_1_4xesmf_weights.nc"
+fint ${FILE} ${MESH} ${INFL} -t -1 -d -1 -b "-150, 150, -50, 70" --interp xesmf_nearest_s2d ${WEIGHTS}
 
 # create mask
 fint ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp mtri_linear -o mask.nc
