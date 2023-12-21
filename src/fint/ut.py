@@ -42,9 +42,9 @@ def nodes_or_ements(data, variable_name, node_num, elem_num):
     """
 
 
-    if data[variable_name].shape[-1] == node_num:
+    if node_num in data[variable_name].shape:
         return "nodes"
-    elif data[variable_name].shape[-1] == elem_num:
+    elif elem_num in data[variable_name].shape :
         return "elements"
 
 
