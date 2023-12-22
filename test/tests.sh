@@ -86,7 +86,7 @@ if [ ! -d "./test/mesh/core2" ]; then
     wget -O ./test/mesh/core2/core2_old_griddes_elements_IFS.nc https://gitlab.awi.de/fesom/core2_old/-/raw/master/core2_old_griddes_elements_IFS.nc
     wget -O ./test/mesh/core2/core2_old_griddes_nodes_IFS.nc https://gitlab.awi.de/fesom/core2_old/-/raw/master/core2_old_griddes_nodes_IFS.nc
 fi
-export TARGET="/test/mesh/core2/"
+export TARGET="./test/mesh/core2/"
 fint ${FILE} ${MESH} ${INFL} -d -1 --target ${TARGET} --to_fesom_mesh
 fint ${FILE} ${MESH} ${INFL} -t 0 -d 0:10 --target ${TARGET} --to_fesom_mesh --interp mtri_linear
 fint ${FILE} ${MESH} ${INFL} -d 0:50  --target ${TARGET} --to_fesom_mesh --interp cdo_remapcon
