@@ -48,11 +48,24 @@ fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b "-150, 150, -50, 70" --interp cdo_rema
 fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b arctic --interp cdo_remapcon
 
 #smm_regrid
-fint ${FILE} ${MESH} --influence 500000 -t 0 -d -1  --interp smm_con --no_shape_mask
-fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b "-150, 150, -50, 70" --interp smm_laf
-fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b arctic --interp smm_nn
-fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 --interp smm_dis
+fint ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp smm_remapcon --no_shape_mask
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b "-150, 150, -50, 70" --interp smm_remaplaf
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b arctic --interp smm_remapnn
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 --interp smm_remapdis
 
+#xesmf_regrid
+fint ${FILE} ${MESH} ${INFL} -t -1 -d -1 -b "-150, 150, -50, 70" --interp xesmf_nearest_s2d
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b arctic --interp xesmf_nearest_s2d
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0 -b gulf --interp xesmf_nearest_s2d
+
+#saving weights and reuse it
+fint ${FILE} ${MESH} ${INFL} -t 1:5 -d -1 -b "-150, 150, -50, 70" --interp smm_remapcon --save_weights
+export WEIGHTS="--weightspath ./temp.fesom.1948_interpolated_-150_150_-50_70_2.5_6125.0_1_4weighs_cdo.nc"
+fint ${FILE} ${MESH} ${INFL} -t 1:5 -d -1 -b "-150, 150, -50, 70" --interp cdo_remapcon ${WEIGHTS}
+
+fint ${FILE} ${MESH} ${INFL} -t 1:5 -d -1 -b "-150, 150, -50, 70" --interp xesmf_nearest_s2d --save_weights
+export WEIGHTS="--weightspath ./temp.fesom.1948_interpolated_-150_150_-50_70_2.5_6125.0_1_4xesmf_weights.nc"
+fint ${FILE} ${MESH} ${INFL} -t -1 -d -1 -b "-150, 150, -50, 70" --interp xesmf_nearest_s2d ${WEIGHTS}
 
 # create mask
 fint ${FILE} ${MESH} ${INFL} -t 0 -d -1  --interp mtri_linear -o mask.nc
@@ -66,6 +79,25 @@ fint ${FILE} ${MESH} ${INFL} -t 0 -d 500:3000  --interp nn --target mask.nc
 
 # Don't apply shapely mask
 fint ${FILE} ${MESH} ${INFL} -t 0 -d 500:3000  --interp nn --target mask.nc --no_shape_mask
+
+# interpolate to a fesom (unstructured) grid
+if [ ! -d "./test/mesh/core2" ]; then
+    mkdir "./test/mesh/core2"
+    wget -O ./test/mesh/core2/core2_old_griddes_elements_IFS.nc https://gitlab.awi.de/fesom/core2_old/-/raw/master/core2_old_griddes_elements_IFS.nc
+    wget -O ./test/mesh/core2/core2_old_griddes_nodes_IFS.nc https://gitlab.awi.de/fesom/core2_old/-/raw/master/core2_old_griddes_nodes_IFS.nc
+    wget -O ./test/mesh/core2/nod2d.out https://gitlab.awi.de/fesom/core2_old/-/raw/master/nod2d.out
+    wget -O ./test/mesh/core2/elem2d.out https://gitlab.awi.de/fesom/core2_old/-/raw/master/elem2d.out
+fi
+export TARGET="./test/mesh/core2/"
+fint ${FILE} ${MESH} ${INFL} -d -1 --target ${TARGET} --to_fesom_mesh
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0:10 --target ${TARGET} --to_fesom_mesh --interp mtri_linear
+fint ${FILE} ${MESH} ${INFL} -d 0:50  --target ${TARGET} --to_fesom_mesh --interp cdo_remapcon
+fint ${FILE} ${MESH} ${INFL} -d 0:100  --target ${TARGET} --to_fesom_mesh --interp cdo_remaplaf
+
+export FILE="./test/data/v.fesom.1948.nc"
+fint ${FILE} ${MESH} ${INFL} -d -1 --target ${TARGET} --to_fesom_mesh
+fint ${FILE} ${MESH} ${INFL} -d 0:50  --target ${TARGET} --to_fesom_mesh --interp cdo_remapcon
+fint ${FILE} ${MESH} ${INFL} -d 0:100  --target ${TARGET} --to_fesom_mesh --interp cdo_remaplaf
 
 # Different variables
 FILE="./test/data/u.fesom.1948.nc"
