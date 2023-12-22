@@ -80,6 +80,18 @@ fint ${FILE} ${MESH} ${INFL} -t 0 -d 500:3000  --interp nn --target mask.nc
 # Don't apply shapely mask
 fint ${FILE} ${MESH} ${INFL} -t 0 -d 500:3000  --interp nn --target mask.nc --no_shape_mask
 
+# interpolate to a fesom (unstructured) grid
+export TARGET="/work/ab0995/a270226/swift.dkrz.de/core2/"
+fint ${FILE} ${MESH} ${INFL} -d -1 --target ${TARGET} --to_fesom_mesh
+fint ${FILE} ${MESH} ${INFL} -t 0 -d 0:10 --target ${TARGET} --to_fesom_mesh --interp mtri_linear
+fint ${FILE} ${MESH} ${INFL} -d 0:50  --target ${TARGET} --to_fesom_mesh --interp cdo_remapcon
+fint ${FILE} ${MESH} ${INFL} -d 0:100  --target ${TARGET} --to_fesom_mesh --interp cdo_remaplaf
+
+export FILE="./test/data/v.fesom.1948.nc"
+fint ${FILE} ${MESH} ${INFL} -d -1 --target ${TARGET} --to_fesom_mesh
+fint ${FILE} ${MESH} ${INFL} -d 0:50  --target ${TARGET} --to_fesom_mesh --interp cdo_remapcon
+fint ${FILE} ${MESH} ${INFL} -d 0:100  --target ${TARGET} --to_fesom_mesh --interp cdo_remaplaf
+
 # Different variables
 FILE="./test/data/u.fesom.1948.nc"
 fint ${FILE} ${MESH} ${INFL} -t 0:3 -d -1
