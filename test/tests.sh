@@ -85,6 +85,8 @@ if [ ! -d "./test/mesh/core2" ]; then
     mkdir "./test/mesh/core2"
     wget -O ./test/mesh/core2/core2_old_griddes_elements_IFS.nc https://gitlab.awi.de/fesom/core2_old/-/raw/master/core2_old_griddes_elements_IFS.nc
     wget -O ./test/mesh/core2/core2_old_griddes_nodes_IFS.nc https://gitlab.awi.de/fesom/core2_old/-/raw/master/core2_old_griddes_nodes_IFS.nc
+    wget -O ./test/mesh/core2/nod2d.out https://gitlab.awi.de/fesom/core2_old/-/raw/master/nod2d.out
+    wget -O ./test/mesh/core2/elem2d.out https://gitlab.awi.de/fesom/core2_old/-/raw/master/elem2d.out
 fi
 export TARGET="./test/mesh/core2/"
 fint ${FILE} ${MESH} ${INFL} -d -1 --target ${TARGET} --to_fesom_mesh
