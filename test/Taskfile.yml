@@ -23,6 +23,7 @@ tasks:
       - task: 3d_nodes_interfaces
       - task: 2d_elements
       - task: timedelta
+      - task: missing_value
       - task: cleanup
 
   download_test_data:
@@ -152,6 +153,14 @@ tasks:
      - fint ${FILE} ${MESH} ${INFL} -t 0:10 --timedelta ' -10D'
      - fint ${FILE} ${MESH} ${INFL} -t 0:10 --timedelta '1h'
      - fint ${FILE} ${MESH} ${INFL} -t 0:10 --timedelta ' -1h'
+
+  missing_value:
+    deps:
+      - download_test_data
+    env:
+      FILE: "./test/data/ssh.fesom.1948.nc" 
+    cmds:
+      - fint ${FILE} ${MESH} ${INFL} -t 0:3 --missing_value -9999
 
   cleanup:
     cmds:
