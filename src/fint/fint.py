@@ -443,6 +443,7 @@ def save_data(
     lon,
     lat,
     out_path,
+    missing_value=None,
 ):
     """
     Saves the interpolated data to a NetCDF file.
@@ -476,6 +477,10 @@ def save_data(
         out_time = np.atleast_1d(shifted_time)
     else:
         out_time = np.atleast_1d(data.time.data[timesteps])
+
+    if missing_value is not None:
+        interpolated3d = np.where(np.isnan(interpolated3d), missing_value, interpolated3d)
+
 
     out1 = xr.Dataset(
         {variable_name: (["time", "depth", "lat", "lon"], interpolated3d)},
@@ -677,6 +682,12 @@ def fint(args=None):
         help="Add timedelta to the time axis. The format is number followed by unit. E.g. '1D' or '10h'. \
               Valid units are 'D' (days), 'h' (hours), 'm' (minutes), 's' (seconds). \
               To substract timedelta, put argument in quotes, and prepend ' -', so SPACE and then -, e.g. ' -10D'.",
+    )
+    parser.add_argument(
+        "--missing_value",
+        default=None,
+        type=float,
+        help="Missing value for the output file. Default is None.",
     )
 
     args = parser.parse_args()
@@ -1065,6 +1076,7 @@ def fint(args=None):
             lon,
             lat,
             out_path,
+            missing_value=args.missing_value,
         )
         if args.rotate:
             save_data(
@@ -1079,6 +1091,7 @@ def fint(args=None):
                 lon,
                 lat,
                 out_path2,
+                missing_value=args.missing_value,
             )
 
 
